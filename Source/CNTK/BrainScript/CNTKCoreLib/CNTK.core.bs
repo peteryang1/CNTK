@@ -303,16 +303,16 @@ DelayLayer {T=1, defaultHiddenActivation=0} =
 BatchNormalizationLayer {spatialRank = 0,  # reduce over these dims. E.g. 2 to reduce over (w,h) in a [W x H x C]-shaped input
                          initialScale = 1,
                          normalizationTimeConstant = 5000, blendTimeConstant = 0,
-                         epsilon = 0.00001, useCntkEngine = false, disableRegularization = false} =
+                         epsilon = 0.00001, useCntkEngine = false, disableRegularization = false, localPrecision=precision} =
 {
     #normShape   = _ConcatArrays (Repeat (spatialRank, 1), 0) # spatial dims get a dimension of 1 (broadcasting, while all others are inferred from input)
     normShape   = (0:1)  # TODO: Update this once we support broadcasting-style parameters.
-    scale       = ParameterTensor {normShape, initValue = initialScale}
-    bias        = ParameterTensor {normShape, initValue = 0}
-    runMean     = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0} # note: disable learning since these are updated differently
-    runVariance = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0}
-    runCount    = ParameterTensor {(1),       initValue = 0, learningRateMultiplier = 0}
-    apply (x)   = BatchNormalization (x, scale, bias, runMean, runVariance, runCount=runCount, spatial=(spatialRank > 0), normalizationTimeConstant=normalizationTimeConstant, blendTimeConstant=blendTimeConstant, epsilon=epsilon, useCntkEngine=useCntkEngine, disableRegularization=disableRegularization)
+    scale       = ParameterTensor {normShape, initValue = initialScale, precision=localPrecision}
+    bias        = ParameterTensor {normShape, initValue = 0, precision=localPrecision}
+    runMean     = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0, precision=localPrecision} # note: disable learning since these are updated differently
+    runVariance = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0, precision=localPrecision}
+    runCount    = ParameterTensor {(1),       initValue = 0, learningRateMultiplier = 0, precision=localPrecision}
+    apply (x)   = BatchNormalization (x, scale, bias, runMean, runVariance, runCount=runCount, spatial=(spatialRank > 0), normalizationTimeConstant=normalizationTimeConstant, blendTimeConstant=blendTimeConstant, epsilon=epsilon, useCntkEngine=useCntkEngine, disableRegularization=disableRegularization, precision=localPrecision)
 }.apply
 
 # LayerNormalizationLayer -- create a layer-normalization layer
@@ -480,7 +480,7 @@ CNTK2 = [
     // Changes: dims -> shape
     DynamicAxis(tag='') = new ComputationNode [ operation = 'DynamicAxis' ; /*plus the function args*/  ]
     # TODO: Is it a good idea to default to "feature"?
-    Input(shape, dynamicAxis='', tag='feature') = new ComputationNode [ operation = 'InputValue' ; shape = new TensorShape [ /*shape*/ ] ; isImage = false /*plus the function args*/ ]
+    Input(shape, dynamicAxis='', tag='feature', precision=precision) = new ComputationNode [ operation = 'InputValue' ; shape = new TensorShape [ /*shape*/ ] ; isImage = false /*plus the function args*/ ]
 
     // 2. Variables and constants
     // Changes: ParameterTensor -> _Parameter; "dims" -> "shape"
@@ -607,21 +607,21 @@ CNTK2 = [
     // 11. Criterion nodes
     // No changes here - we said the default input would be the label sequence here, against which the
     // empirical sequence is compared to. Keeping this for now.
-    CrossEntropyWithSoftmax(labelSequence, outProbVectorSequence, axis=0, tag='') =
+    CrossEntropyWithSoftmax(labelSequence, outProbVectorSequence, axis=0, tag='', precision=precision) =
         if axis==0 then new ComputationNode [ operation = 'CrossEntropyWithSoftmax' ; inputs = _AsNodes (labelSequence : outProbVectorSequence) /*plus the function args*/ ]
-        else [ tag1 = tag; out = Minus (ReduceLogSum (outProbVectorSequence, axis=axis), ReduceSum (labelSequence .* outProbVectorSequence, axis=axis), tag=tag1) ].out
+        else [ tag1 = tag; out = Minus (ReduceLogSum (outProbVectorSequence, axis=axis, precision=precision), ReduceSum (labelSequence .* outProbVectorSequence, axis=axis), tag=tag1, precision=precision) ].out
     # Classification error along a specific axis: account only for missed labels, i.e.
     # strictly check whether at the one '1' location in labels we find a value equal to the max
-    ClassificationError(labelSequence, outVectorSequence, topN=1, axis=0, tag='') =
-        if axis==0 then new ComputationNode [ operation = 'ClassificationError' ; inputs = _AsNodes (if topN == 1 then (labelSequence : outVectorSequence) else  (labelSequence : outVectorSequence : Constant (topN))) /*plus the function args*/ ]
+    ClassificationError(labelSequence, outVectorSequence, topN=1, axis=0, tag='', precision=precision) =
+        if axis==0 then new ComputationNode [ operation = 'ClassificationError' ; inputs = _AsNodes (if topN == 1 then (labelSequence : outVectorSequence) else  (labelSequence : outVectorSequence : Constant (topN, precision=precision))) /*plus the function args*/ ]
         else if topN != 1 then Fail ("ClassificationError() along a specific axis does not support topN.")
         else {
-            axMax     = ReduceMax (outVectorSequence, axis=axis)    # max value along competition axis
+            axMax     = ReduceMax (outVectorSequence, axis=axis, precision=precision)    # max value along competition axis
             pred      = outVectorSequence == axMax                  # 1 for all values that are max
             wrongPred = labelSequence != pred                       # look up all wrong predictions {label index}
-            axErr     = ReduceSum (wrongPred, axis=axis)            # sum up wrong predictions  along competition axis
+            axErr     = ReduceSum (wrongPred, axis=axis, precision=precision)            # sum up wrong predictions  along competition axis
             capErr    = axErr >= 1                                  # only count maximally one error per prediction
-            err       = ReduceMean (capErr, tag=tag)                # average into a single number per sample
+            err       = ReduceMean (capErr, tag=tag, precision=precision)                # average into a single number per sample
         }.err
     ErrorPrediction = ClassificationError  # legacy
     # TODO: replace with this (need to deal with topN thing):
@@ -668,27 +668,27 @@ CNTK2 = [
 #  - initFromLiteral="..." (deprecated) --> parse a string literal (obsolete with value=array form)
 #  - init="fixedValue", value from 'value'
 # Warning: Current config will behave unexpected if user mistypes 'initValue' as 'value' (which will be ignored, defaulting to "uniform" init)
-Parameter {outputDim, inputDim, learningRateMultiplier = 1.0, init = ''/*|uniform|fixedValue|gaussian|fromFile|fromLiteral*/, initValueScale = 1, value = 0/*deprecated*/, initValue = '', initFromFilePath = '', initFromLiteral = ''/*deprecated*/, initOnCPUOnly=true, randomSeed=-1, tag=''} = new ComputationNode [ operation = 'LearnableParameter' ; initFilterRank = 0 ; initOutputRank = 1 ; shape = new TensorShape [ dims = (outputDim : inputDim) ] /*plus the function args*/ ]
+Parameter {outputDim, inputDim, learningRateMultiplier = 1.0, init = ''/*|uniform|fixedValue|gaussian|fromFile|fromLiteral*/, initValueScale = 1, value = 0/*deprecated*/, initValue = '', initFromFilePath = '', initFromLiteral = ''/*deprecated*/, initOnCPUOnly=true, randomSeed=-1, tag='', precision=precision} = new ComputationNode [ operation = 'LearnableParameter' ; initFilterRank = 0 ; initOutputRank = 1 ; shape = new TensorShape [ dims = (outputDim : inputDim) ] /*plus the function args*/ ]
 
 LearnableParameter = Parameter  // deprecated
 
 # TODO: make Parameter take tensor dims?
-ParameterTensor {dims, learningRateMultiplier = 1.0, init = ''/*|uniform|fixedValue|gaussian|fromFile|fromLiteral*/, initValueScale = 1, value = 0, initValue = '', initFilterRank = 0, initOutputRank = 1, initFromFilePath = '', initFromLiteral = '', initOnCPUOnly=true, randomSeed=-1, tag=''} = new ComputationNode [ operation = 'LearnableParameter' ; shape = new TensorShape [ /*dims*/ ] /*plus the function args*/ ]
+ParameterTensor {dims, learningRateMultiplier = 1.0, init = ''/*|uniform|fixedValue|gaussian|fromFile|fromLiteral*/, initValueScale = 1, value = 0, initValue = '', initFilterRank = 0, initOutputRank = 1, initFromFilePath = '', initFromLiteral = '', initOnCPUOnly=true, randomSeed=-1, tag='', precision=precision} = new ComputationNode [ operation = 'LearnableParameter' ; shape = new TensorShape [ /*dims*/ ] /*plus the function args*/ ]
 ConstantFromString(literal, tag='') = ParameterTensor((0)/*dim, will be inferred*/, initFromLiteral = literal, learningRateMultiplier = 0.0)
 # TODO: Deprecate ConstantFromString() in favor of Constant(array expression)
 DynamicAxis(tag='') = new ComputationNode [ operation = 'DynamicAxis' ; /*plus the function args*/  ]
-Input(dims, dynamicAxis='', sparse=false, tag='feature') =
-     if sparse then SparseInput(dims, dynamicAxis=dynamicAxis, tag=tag)
+Input(dims, dynamicAxis='', sparse=false, tag='feature', precision=precision) =
+     if sparse then SparseInput(dims, dynamicAxis=dynamicAxis, tag=tag, precision=precision)
      else new ComputationNode [ operation = 'InputValue' ; shape = new TensorShape [ /*dims*/ ] ; isImage = false /*plus the function args*/ ]
 # TODO: change from dynamicAxis by name to dynamicAxis being an actual object
 # the following variants of Input() are deprecated
-SparseInput(dims, dynamicAxis='', tag='feature') = new ComputationNode [ operation = 'SparseInputValue' ; shape = new TensorShape [ /*dims*/ ] ; isImage = false /*plus the function args*/ ]
-ImageInput(imageWidth, imageHeight, imageChannels, imageLayout='CHW', dynamicAxis='', tag='feature') = new ComputationNode [ operation = 'InputValue' ; isImage = true /*plus the function args*/ ]
-SparseImageInput(imageWidth, imageHeight, imageChannels, imageLayout='CHW', dynamicAxis='', tag='feature') = new ComputationNode [ operation = 'SparseInputValue' ; isImage = true /*plus the function args*/ ]
+SparseInput(dims, dynamicAxis='', tag='feature', precision=precision) = new ComputationNode [ operation = 'SparseInputValue' ; shape = new TensorShape [ /*dims*/ ] ; isImage = false /*plus the function args*/ ]
+ImageInput(imageWidth, imageHeight, imageChannels, imageLayout='CHW', dynamicAxis='', tag='feature', precision=precision) = new ComputationNode [ operation = 'InputValue' ; isImage = true /*plus the function args*/ ]
+SparseImageInput(imageWidth, imageHeight, imageChannels, imageLayout='CHW', dynamicAxis='', tag='feature', precision=precision) = new ComputationNode [ operation = 'SparseInputValue' ; isImage = true /*plus the function args*/ ]
 EnvironmentInput(propertyName, tag='') = new ComputationNode [ operation = 'EnvironmentInput' /*plus the function args*/ ]
 # TODO: make 'dims' the first parameter, think ConstantTensor<dims> (val)
-ConstantTensor(val, dims, tag='') = ParameterTensor(dims, learningRateMultiplier = 0, initValue = val)
-Constant(val, rows = 1, cols = 1, tag='') = Parameter(rows, cols, learningRateMultiplier = 0, initValue = val)
+ConstantTensor(val, dims, tag='', precision=precision) = ParameterTensor(dims, learningRateMultiplier = 0, initValue = val, precision=precision)
+Constant(val, rows = 1, cols = 1, tag='', precision=precision) = Parameter(rows, cols, learningRateMultiplier = 0, initValue = val, precision=precision)
 # in PastValue/FutureValue, initialState, if given, overrides defaultHiddenActivation
 # for back compat, we must keep this value of 0.1 for defaultHiddenActivation even if it is strange
 _PFValue   (pastOrFuture, dims, input, timeStep = 1, initialState = None, defaultHiddenActivation = 0.1, tag='') =
@@ -748,7 +748,7 @@ Acos(x, tag='') = new ComputationNode [ operation = 'Acos' ; inputs = _AsNodes (
 Asin(x, tag='') = new ComputationNode [ operation = 'Asin' ; inputs = _AsNodes (x) /*plus the function args*/ ]
 Asinh(x, tag='') = new ComputationNode [ operation = 'Asinh' ; inputs = _AsNodes (x) /*plus the function args*/ ]
 Atanh(x, tag='') = new ComputationNode [ operation = 'Atanh' ; inputs = _AsNodes (x) /*plus the function args*/ ]
-BatchNormalization(input, scale, bias, runMean, runVariance, runCount=None, spatial=false, normalizationTimeConstant = 0, blendTimeConstant = 0, epsilon = 0.00001, useCntkEngine = true, disableRegularization = false, imageLayout='CHW', tag='') = new ComputationNode
+BatchNormalization(input, scale, bias, runMean, runVariance, runCount=None, spatial=false, normalizationTimeConstant = 0, blendTimeConstant = 0, epsilon = 0.00001, useCntkEngine = true, disableRegularization = false, imageLayout='CHW', tag='', precision=precision) = new ComputationNode
 {
     operation = 'BatchNormalization'
     inputs =
@@ -813,6 +813,9 @@ Trace (node, say='', logFrequency=100, logFirst=10, logGradientToo=false, onlyUp
 TransposeTimes(leftMatrix, rightMatrix, tag='') = new ComputationNode [ operation = 'TransposeTimes' ; inputs = _AsNodes (leftMatrix : rightMatrix) /*plus the function args*/ ]
 QuantizedTimes(leftMatrix, rightMatrix, bitSmoothingA=1, bitSmoothingB=1, outputRank=1, inferInputRankToMap=-1, tag='') = new ComputationNode [ operation = 'QuantizedTimes' ; inputs = _AsNodes (leftMatrix : rightMatrix) /*plus the function args*/ ]
 Where(cond, tag='') = new ComputationNode [ operation = 'Where' ; inputs = _AsNodes (cond) /*plus the function args*/ ]
+
+# Cast Node
+Cast(node, precision='', tag='') = new ComputationNode [ operation = 'Cast' ; inputs = _AsNodes (node) /*plus the function args*/ ]
 
 ##############################################################################
 # non-neural-network functions

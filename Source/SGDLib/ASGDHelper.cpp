@@ -646,6 +646,24 @@ ASGDHelper<ElemType>* NewASGDHelper(
 #endif
 }
 
+// Currently we do not support ASGD for mixed precision training
+// Here is an empty helper
+template <> 
+ASGDHelper<half>* NewASGDHelper<half>(
+	const std::list<ComputationNodeBasePtr> & learnableNodes,
+	size_t nodeNumRanks,
+	bool useAsyncBuffer,
+	bool isSimulatedModelAveragingSGD,
+	AdjustLearningRateAtBeginning adjusttype,
+	double adjustCoef,
+	size_t adjustPerMinibatches,
+	int traceLevel,
+	int syncPerfStats)
+{
+	fprintf(stderr, "Currently we do not support ASGD for mixed precision training.\n");
+	NOT_IMPLEMENTED;
+}
+
 template ASGDHelper<float>* NewASGDHelper<float>(
     const std::list<ComputationNodeBasePtr> & learnableNodes,
     size_t nodeNumRanks,

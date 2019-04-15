@@ -32,6 +32,7 @@
 #include "ASGDHelper.h"
 
 #include "CNTKLibraryInternals.h"
+#include "SimpleDistGradAggregatorHelper.h"
 #include "SimpleDistGradAggregator.h"
 #include "V2SimpleDistGradAggregator.h"
 #include "ProgressTracing.h"
@@ -55,8 +56,10 @@ using namespace std;
 
 template SGD<float>::SGD(const ConfigParameters&);
 template SGD<double>::SGD(const ConfigParameters&);
+template SGD<half>::SGD(const ConfigParameters&);
 template SGD<float>::SGD(const ScriptableObjects::IConfigRecord&);
 template SGD<double>::SGD(const ScriptableObjects::IConfigRecord&);
+template SGD<half>::SGD(const ScriptableObjects::IConfigRecord&);
 
 // -----------------------------------------------------------------------
 // Train() -- perform a multi-epoch training end-to-end with checkpointing
@@ -200,6 +203,50 @@ static void CopyBestEpochs(
     }
 }
 
+template <class NodeElemType>
+static void InitializeSmoothedGradient(
+	shared_ptr<ComputationNode<NodeElemType>> node, 
+	list<MatrixBasePtr>& smoothedGradients, 
+	vector<double>& smoothedCounts, 
+	vector<wstring>& nodesToUpdateDescriptions,
+	size_t& numParameters,
+	bool useMixedPrecisionTraining, 
+	DEVICE_TYPE deviceId)
+{
+	// Note: We don't actually need the smoothedGradients if !IsParameterUpdateRequired().
+	// However, this is hard to fix since lots of code assumes smoothedGradients to be in the same order as learnableNodes.
+	// V2 API fixes this.
+	MatrixBasePtr smoothedGradientPtr;
+	size_t numRows = node->Value().GetNumRows();
+	size_t numCols = node->Value().GetNumCols();
+
+	if (useMixedPrecisionTraining && std::is_same<NodeElemType, half>()) // ElemType == half
+	{
+		// In Mixed precision training, the final gradients should be FP32, so as to smoothedGradient
+		const size_t smoothedGradientSpaceFactor = 3; // we need 3x space for (origin smoothed gradient/FP32 gradient buffer/FP32 master weight)
+		auto compoundMatrixPtr = std::make_shared<Matrix<float>>(numRows, numCols * smoothedGradientSpaceFactor, deviceId);
+
+		// initialize master weight(FP32) with FP16 weight
+		auto masterWeightMatrix = compoundMatrixPtr->ColumnSlice((smoothedGradientSpaceFactor - 1)*numCols, numCols);
+		masterWeightMatrix.CastAssignValuesOf(node->Value());
+
+		smoothedGradientPtr = compoundMatrixPtr;
+	}
+	else
+	{
+		smoothedGradientPtr = std::make_shared<Matrix<NodeElemType>>(numRows, numCols, deviceId);
+	}
+	smoothedGradients.push_back(smoothedGradientPtr);
+
+	smoothedCounts.push_back(0);
+	if (node->IsParameterUpdateRequired())
+	{
+		nodesToUpdateDescriptions.push_back(node->NodeDescription() + L" : [" + Microsoft::MSR::CNTK::ToFixedWStringFromMultiByte(string(node->GetSampleLayout())) + L"]");
+		numParameters += node->GetSampleLayout().GetNumElements();
+	}
+}
+
+
 template <class ElemType>
 void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
                                       bool networkLoadedFromCheckpoint,
@@ -208,9 +255,12 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
                                       IDataReader* trainSetDataReader,
                                       IDataReader* validationSetDataReader)
 {
+	bool useMixedPrecisionTraining = UseMixedPrecisionTraining();
     let& criterionNodes = GetTrainCriterionNodes(net);
 
     fprintf(stderr, "\n");
+	if (useMixedPrecisionTraining)
+		LOGPRINTF(stderr, "Using mixed precision training(FP16 and FP32).\n");
     if (criterionNodes.size() == 1)
     {
         LOGPRINTF(stderr, "Training criterion:   %ls = %ls\n", criterionNodes.front()->NodeName().c_str(), criterionNodes.front()->OperationName().c_str());
@@ -228,6 +278,11 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
             InvalidArgument("TrainOrAdaptModel: No criterion node was specified.");
         }
     }
+
+	if (criterionNodes.front()->template Is<ComputationNode<half>>())
+	{
+		InvalidArgument("TrainOrAdaptModel: Using half for loss function may cause overflow, please cast to float.");
+	}
 
     // This code is only relevant for the new (V2) readers. It exist because of
     // a shortcoming in DecimateMinibatchInPlace, which does not yet work when inputs
@@ -339,26 +394,25 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
     // initializing weights and gradient holder
     // only one criterion so far TODO: support multiple ones?
     auto& learnableNodes = net->LearnableParameterNodes(criterionNodes[0]);
-    list<Matrix<ElemType>> smoothedGradients;
+	list<MatrixBasePtr> smoothedGradients;
     vector<double> smoothedCounts; // currently used by FSAdaGradUpdate()
     size_t numParameters = 0;
 
     vector<wstring> nodesToUpdateDescriptions; // for logging only
     for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++)
     {
-        ComputationNodePtr node = dynamic_pointer_cast<ComputationNode<ElemType>>(*nodeIter);
-        // Note: We don't actually need the smoothedGradients if !IsParameterUpdateRequired().
-        // However, this is hard to fix since lots of code assumes smoothedGradients to be in the same order as learnableNodes.
-        // V2 API fixes this.
-        smoothedGradients.push_back(Matrix<ElemType>(node->Value().GetNumRows(),
-                                                     node->Value().GetNumCols(),
-                                                     net->GetDeviceId()));
-        smoothedCounts.push_back(0);
-        if (node->IsParameterUpdateRequired())
-        {
-            nodesToUpdateDescriptions.push_back(node->NodeDescription() + L" : [" + Microsoft::MSR::CNTK::ToFixedWStringFromMultiByte(string(node->GetSampleLayout())) + L"]");
-            numParameters += node->GetSampleLayout().GetNumElements();
-        }
+		auto nodeFloat = dynamic_pointer_cast<ComputationNode<float>>(*nodeIter);
+		auto nodeHalf = dynamic_pointer_cast<ComputationNode<half>>(*nodeIter);
+		auto nodeDouble = dynamic_pointer_cast<ComputationNode<double>>(*nodeIter);
+
+		if (nodeFloat)
+			InitializeSmoothedGradient<float>(nodeFloat, smoothedGradients, smoothedCounts, nodesToUpdateDescriptions, numParameters, useMixedPrecisionTraining, net->GetDeviceId());
+		else if (nodeDouble)
+			InitializeSmoothedGradient<double>(nodeDouble, smoothedGradients, smoothedCounts, nodesToUpdateDescriptions, numParameters, useMixedPrecisionTraining, net->GetDeviceId());
+		else if (nodeHalf)
+			InitializeSmoothedGradient<half>(nodeHalf, smoothedGradients, smoothedCounts, nodesToUpdateDescriptions, numParameters, useMixedPrecisionTraining, net->GetDeviceId());
+		else
+			LogicError("Type is not supported.");
     }
     size_t numNeedsGradient = 0;
     for (let node : net->GetEvalOrder(criterionNodes[0]))
@@ -411,6 +465,7 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
     else if (GetParallelizationMethod() == ParallelizationMethod::modelAveragingSGD ||
              GetParallelizationMethod() == ParallelizationMethod::blockMomentumSGD)
     {
+		if (useMixedPrecisionTraining) { NOT_IMPLEMENTED; } // remove this when we can use model averaging sgd or block momentum sgd in mixed precision training
         InitModelAggregationHandler(m_syncStatsTrace, net->GetDeviceId());
     }
 
@@ -495,6 +550,7 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
     // Multiverso Warpper for ASGD logic init
     if (m_parallelizationMethod == ParallelizationMethod::dataParallelASGD)
     {
+		if (useMixedPrecisionTraining) { NOT_IMPLEMENTED; } // remove this when we can use ASGD in mixed precision training
         m_pASGDHelper.reset(NewASGDHelper<ElemType>(learnableNodes,
                                                     m_mpi->NumNodesInUse(),
                                                     m_isAsyncBufferEnabled,
@@ -532,6 +588,11 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
         if (GetParallelizationMethod() == ParallelizationMethod::dataParallelSGD &&
             currentNumGradientBits != m_numGradientBits[i])
         {
+			if (useMixedPrecisionTraining)
+			{
+				fprintf(stderr, "Cannot use 1-bit SGD in mixed precision training.");
+				NOT_IMPLEMENTED; 
+			}
             currentNumGradientBits = m_numGradientBits[i];
             InitDistGradAgg(evaluationNodes.size(), currentNumGradientBits, net->GetDeviceId(), m_traceLevel);
         }
@@ -611,7 +672,7 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
         // basis for a set number of epochs.  For epochs after that point, m_mbSize.size(), either
         // we just keep using
         // the last minibatch size, or we use tuning to try and find a better one.
-        if (m_autoAdjustMinibatch && i >= m_mbSize.size())
+        if (m_autoAdjustMinibatch && i >= m_mbSize.size() && !useMixedPrecisionTraining) // Disable AdaptiveMinibatchSizing for mixed precision training
         {
             size_t numFramesToUseInSearch = m_numSamples4Search[i];
             if (m_epochSize != requestDataSize)
@@ -1004,7 +1065,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                                     const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                     StreamMinibatchInputs* inputMatrices, // TODO: why is this a pointer?
                                     const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                    std::list<Matrix<ElemType>>& smoothedGradients, vector<double>& smoothedCounts,
+                                    std::list<MatrixBasePtr>& smoothedGradients, vector<double>& smoothedCounts,
                                     /*out*/ EpochCriterion& epochCriterion,
                                     /*out*/ std::vector<EpochCriterion>& epochEvalErrors,
                                     const std::string& prefixMsg,
@@ -1039,6 +1100,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
     int numMBsRun = 0;
     int numMBsRunSinceLastLogged = 0;
 
+	bool useMixedPrecisionTraining = UseMixedPrecisionTraining();
     bool useGradientAggregation = UsingGradientAggregation(epochNumber);
     bool useModelAggregation = UsingModelAggregation(epochNumber);
     bool useAsyncGradientAggregation = UsingAsyncGradientAggregation(epochNumber);
@@ -1081,7 +1143,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 
     net->StartEvaluateMinibatchLoop(evaluationNodes);
     net->StartEvaluateMinibatchLoop(criterionNodes);
-    if (m_needAdaptRegularization && m_adaptationRegType == AdaptationRegType::KL && refNode)
+    if (m_needAdaptRegularization && m_adaptationRegType == AdaptationRegType::KL && refNode && !useMixedPrecisionTraining)
     {
         refNet->StartEvaluateMinibatchLoop(refNode);
     }
@@ -1146,10 +1208,15 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
     // NOTE: the following two local matrices are not used in distGradAgg path
     // assume only one training criterion node for each epoch.
     // The criterion values are accumulated here over the minibatches (without having to pull them off the GPU).
-    CriterionAccumulator<ElemType> localEpochCriterion(criterionNodes, net->GetDeviceId());
-    CriterionAccumulator<ElemType> localEpochEvalErrors(
-        evaluationNodes, net->GetDeviceId(),
-        {evaluationNodesWhichAccumulateResult.begin(), evaluationNodesWhichAccumulateResult.end()});
+	// For half, the cr and error nodes should be float nodes
+	shared_ptr<CriterionAccumulatorBase> localEpochCriterionPtr = CriterionAccumulatorFactory::CreateCriterionAccumulator<ElemType>(
+		criterionNodes, net->GetDeviceId());
+	shared_ptr<CriterionAccumulatorBase> localEpochEvalErrorsPtr = CriterionAccumulatorFactory::CreateCriterionAccumulator<ElemType>(
+		evaluationNodes, net->GetDeviceId(),
+		{evaluationNodesWhichAccumulateResult.begin(), evaluationNodesWhichAccumulateResult.end()});
+
+	CriterionAccumulatorBase & localEpochCriterion = *localEpochCriterionPtr;
+	CriterionAccumulatorBase & localEpochEvalErrors = *localEpochEvalErrorsPtr;
 
     // --- MAIN MINIBATCH LOOP
 
@@ -1334,8 +1401,6 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 #ifdef __PROFILE__
                 startTime = clock();
 #endif
-
-
                 if (learnRatePerSample > 0.01 * m_minLearnRate) // only compute gradient when learning rate is large enough
                     net->Backprop(criterionNodes[0]);
 
@@ -1476,36 +1541,23 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
             if (numSamplesInMinibatch != aggregateNumSamples)
                 fprintf(stderr, "SGD: using true #samples %d instead of MB size %d\n", (int)numSamplesInMinibatch, (int)aggregateNumSamples);
 #endif
-            auto smoothedGradientIter = smoothedGradients.begin();
-            auto smoothedCountIter = smoothedCounts.begin();
-            for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++, smoothedGradientIter++, smoothedCountIter++)
-            {
-                ComputationNodeBasePtr node = *nodeIter;
-                if (node->IsParameterUpdateRequired())
-                {
-#ifdef _DEBUG
-                    if (smoothedGradientIter->HasNan("TrainOneEpoch/UpdateWeights(): "))
-                        LogicError("%ls %ls operation has NaNs in smoothedGradient.", node->NodeName().c_str(), node->OperationName().c_str());
-#endif
-                    double nodeDependentLearningRatePerSample = learnRatePerSample * node->GetLearningRateMultiplier();
-                    double nodeDependentRegMultiplier = dynamic_pointer_cast<LearnableParameter<ElemType>>(node)->GetRegMultiplier();
-                    double momentumPerSample = GetMomentumPerSample(epochNumber /*BUGBUG workaround:*/, net->GetMBLayoutPtrOfNetwork()->GetNumParallelSequences());
-                    // TODO: Check why l2Factor is not applied to L1. Bug?
-                    // BUGBUG (Issue #95): Access to net MBLayout can no longer be done if we have multiple input layouts
-                    UpdateWeights(dynamic_pointer_cast<ComputationNode<ElemType>>(node)->Value(),
-                                  dynamic_pointer_cast<ComputationNode<ElemType>>(node)->Gradient(),
-                                  *smoothedGradientIter, *smoothedCountIter,
-                                  nodeDependentLearningRatePerSample, momentumPerSample,
-                                  numSamplesInMinibatch,
-                                  m_L2RegWeight * nodeDependentRegMultiplier, m_L1RegWeight * nodeDependentRegMultiplier,
-                                  m_needAveMultiplier, m_useNesterovMomentum, m_disableMomentumUnitGain);
-                    node->BumpEvalTimeStamp();
-#ifdef _DEBUG
-                    if (dynamic_pointer_cast<ComputationNode<ElemType>>(node)->Value().HasNan("TrainOneEpoch/UpdateWeights(): "))
-                        LogicError("%ls %ls operation has NaNs in functionValues after parameter update.", node->NodeName().c_str(), node->OperationName().c_str());
-#endif
-                }
-            }
+			auto smoothedGradientIter = smoothedGradients.begin();
+			auto smoothedCountIter = smoothedCounts.begin();
+			for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++, smoothedGradientIter++, smoothedCountIter++)
+			{
+				auto nodeFloat = dynamic_pointer_cast<ComputationNode<float>>(*nodeIter);
+				auto nodeDouble = dynamic_pointer_cast<ComputationNode<double>>(*nodeIter);
+				auto nodeHalf = dynamic_pointer_cast<ComputationNode<half>>(*nodeIter);
+
+				if (nodeFloat)
+					UpdateWeights<float>(nodeFloat, *smoothedGradientIter, *smoothedCountIter, net, learnRatePerSample, epochNumber, numSamplesInMinibatch);
+				else if (nodeDouble)
+					UpdateWeights<double>(nodeDouble, *smoothedGradientIter, *smoothedCountIter, net, learnRatePerSample, epochNumber, numSamplesInMinibatch);
+				else if (nodeHalf)
+					MixedUpdateWeights(nodeHalf, *smoothedGradientIter, *smoothedCountIter, net, learnRatePerSample, epochNumber, numSamplesInMinibatch);
+				else
+					LogicError("Type is not supported.");
+			}
         }
 
         // aggregation by model averaging or block momentum
@@ -1919,7 +1971,7 @@ double SGD<ElemType>::SearchForBestLearnRate(ComputationNetworkPtr net,
                                              const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                              StreamMinibatchInputs* inputMatrices,
                                              const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                             std::list<Matrix<ElemType>>& smoothedGradients, vector<double> smoothedCounts,
+                                             std::list<MatrixBasePtr>& smoothedGradients, vector<double> smoothedCounts,
                                              const bool learnRateInitialized,
                                              const double largestPrevLearnRatePerSample)
 {
@@ -2093,7 +2145,7 @@ size_t SGD<ElemType>::AdaptiveMinibatchSizing(ComputationNetworkPtr net,
                                               const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                               StreamMinibatchInputs* inputMatrices,
                                               const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                              std::list<Matrix<ElemType>>& smoothedGradients, vector<double> smoothedCounts,
+                                              std::list<MatrixBasePtr>& smoothedGradients, vector<double> smoothedCounts,
                                               const double learningRateAdjustmentFactor)
 {
     size_t minMinibatchSize = initialMinibatchSize;
@@ -2194,7 +2246,7 @@ size_t SGD<ElemType>::SearchForBestMinibatchSize(ComputationNetworkPtr net,
                                                  const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                                  StreamMinibatchInputs* inputMatrices,
                                                  const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                                 std::list<Matrix<ElemType>>& smoothedGradients, std::vector<double> smoothedCounts,
+                                                 std::list<MatrixBasePtr>& smoothedGradients, std::vector<double> smoothedCounts,
                                                  const size_t minMinibatchSize, const size_t maxMinibatchSize)
 {
     // may happen for automatically reduced learning rates
@@ -2298,7 +2350,7 @@ void SGD<ElemType>::TrainOneMiniEpochAndReloadModel(ComputationNetworkPtr net,
                                                     const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                                     StreamMinibatchInputs* inputMatrices,
                                                     const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                                    std::list<Matrix<ElemType>>& smoothedGradients, vector<double> smoothedCounts,
+                                                    std::list<MatrixBasePtr>& smoothedGradients, vector<double> smoothedCounts,
                                                     /*out*/ EpochCriterion& epochCriterion,
                                                     /*out*/ std::vector<EpochCriterion>& epochEvalErrors,
                                                     std::string prefixMsg,
@@ -2373,22 +2425,94 @@ void SGD<ElemType>::AttemptUtteranceDerivativeFeatures(ComputationNetworkPtr net
 }
 
 template <class ElemType>
+static std::shared_ptr<IDistGradAggregator<ElemType>> GetAllReduceDistGradAggregator(const MPIWrapperPtr& mpi, 
+																					 int nBits, 
+																					 bool zeroThresholdFor1Bit, 
+																					 bool useAsyncAggregation, 
+																					 int traceLevel, 
+																					 int syncStatsTrace) 
+{
+	if (Globals::UseV2Aggregator())
+	{
+		auto communicator = ::CNTK::QuantizedMPICommunicator(
+			zeroThresholdFor1Bit,
+			true /*useQuantizationForSelfStripe*/,
+			nBits);
+		return std::make_shared<V2AllReduceDistGradAggregator<ElemType>>(communicator, useAsyncAggregation, traceLevel, syncStatsTrace);
+	}
+	else
+		return std::make_shared<AllReduceDistGradAggregator<ElemType>>(mpi, nBits, zeroThresholdFor1Bit, true, useAsyncAggregation, traceLevel, syncStatsTrace);
+}
+
+template <>
+std::shared_ptr<IDistGradAggregator<half>> GetAllReduceDistGradAggregator(const MPIWrapperPtr& mpi,
+																				 int nBits,
+																				 bool zeroThresholdFor1Bit,
+																				 bool useAsyncAggregation,
+																				 int traceLevel,
+																				 int syncStatsTrace)
+{
+	NOT_IMPLEMENTED;
+}
+
+template <class ElemType>
+static std::shared_ptr<IMASGD<ElemType>> GetBlockMomentumSGD(
+	const MPIWrapperPtr& mpi,
+	size_t traceLevel,
+	DEVICEID_TYPE devID,
+	bool useNesterovBlockMomentum,
+	bool resetSGDMomentum,
+	double blockLearningRate,
+	double blockMomentumAsTimeConstant,
+	size_t modelAggregationBlockSize)
+{
+	assert(!Globals::UseV2Aggregator());
+	return make_shared<BlockMomentumSGD<ElemType>>(mpi, traceLevel, devID, useNesterovBlockMomentum, resetSGDMomentum, blockLearningRate, blockMomentumAsTimeConstant, modelAggregationBlockSize);
+}
+
+template <>
+std::shared_ptr<IMASGD<half>> GetBlockMomentumSGD<half>(
+	const MPIWrapperPtr& mpi,
+	size_t traceLevel,
+	DEVICEID_TYPE devID,
+	bool useNesterovBlockMomentum,
+	bool resetSGDMomentum,
+	double blockLearningRate,
+	double blockMomentumAsTimeConstant,
+	size_t modelAggregationBlockSize)
+{
+	assert(!Globals::UseV2Aggregator());
+	NOT_IMPLEMENTED;
+}
+
+template <class ElemType>
+static shared_ptr<IMASGD<ElemType>> GetBasicModelAveragingSGD(const MPIWrapperPtr& mpi, size_t traceLevel, DEVICEID_TYPE devID)
+{
+	return make_shared<BasicModelAveragingSGD<ElemType>>(mpi, traceLevel, devID);
+}
+
+template <>
+shared_ptr<IMASGD<half>> GetBasicModelAveragingSGD(const MPIWrapperPtr& mpi, size_t traceLevel, DEVICEID_TYPE devID)
+{
+	NOT_IMPLEMENTED;
+}
+
+template <class ElemType>
 void SGD<ElemType>::InitDistGradAgg(int numEvalNodes, int numGradientBits, int deviceId, int traceLevel)
 {
     assert(GetParallelizationMethod() == ParallelizationMethod::dataParallelSGD);
 
     if (numGradientBits != (8 * sizeof(ElemType)))
     {
+		if (UseMixedPrecisionTraining())
+		{
+			fprintf(stderr, "Cannot using 1-bit SGD in mixed precision training.\n");
+			NOT_IMPLEMENTED;
+		}
         if (traceLevel > 0)
             fprintf(stderr, "Initializing dataParallelSGD for %d-bit quantization.\n", numGradientBits);
 #ifdef CNTK_PARALLEL_TRAINING_SUPPORT
-        if (Globals::UseV2Aggregator())
-        {
-            auto communicator = ::CNTK::QuantizedMPICommunicator(m_zeroThresholdFor1Bit, true, numGradientBits);
-            m_distGradAgg = std::make_shared<V2AllReduceDistGradAggregator<ElemType>>(communicator, m_bufferedAsyncGradientAggregation, traceLevel, m_syncStatsTrace);
-        }
-        else
-            m_distGradAgg = std::make_shared<AllReduceDistGradAggregator<ElemType>>(m_mpi, numGradientBits, m_zeroThresholdFor1Bit, true /*useQuantizationForSelfStripe*/, m_bufferedAsyncGradientAggregation, traceLevel, m_syncStatsTrace);
+		m_distGradAgg = GetAllReduceDistGradAggregator<ElemType>(m_mpi, numGradientBits, m_zeroThresholdFor1Bit, m_bufferedAsyncGradientAggregation, traceLevel, m_syncStatsTrace);
 #else
         RuntimeError("Gradient quantization is unsupported in CNTK binaries built without quantized gradient aggregation support!");
 #endif // !CNTK_PARALLEL_TRAINING_SUPPORT
@@ -2397,10 +2521,7 @@ void SGD<ElemType>::InitDistGradAgg(int numEvalNodes, int numGradientBits, int d
     {
         if (traceLevel > 0)
             fprintf(stderr, "Initializing dataParallelSGD with FP%d aggregation.\n", numGradientBits);
-        if (Globals::UseV2Aggregator()) // Currently used to check V2 against baselines.
-            m_distGradAgg = std::make_shared<V2SimpleDistGradAggregator<ElemType>>(m_mpi, m_bufferedAsyncGradientAggregation, deviceId, m_syncStatsTrace, ::CNTK::MPICommunicator(m_packThresholdSizeInBytes));
-        else
-            m_distGradAgg = std::make_shared<SimpleDistGradAggregator<ElemType>>(m_mpi, m_bufferedAsyncGradientAggregation, deviceId, m_syncStatsTrace, m_packThresholdSizeInBytes);
+		m_distGradAgg = GetSimpleDistGradAggregator<ElemType>(m_mpi, m_bufferedAsyncGradientAggregation, deviceId, m_syncStatsTrace, m_packThresholdSizeInBytes);
     }
 
     m_gradHeader.reset(DistGradHeader::Create(numEvalNodes), [](DistGradHeader* ptr) { DistGradHeader::Destroy(ptr); });
@@ -2415,7 +2536,7 @@ void SGD<ElemType>::InitModelAggregationHandler(int traceLevel, DEVICEID_TYPE de
     }
     if (GetParallelizationMethod() == ParallelizationMethod::modelAveragingSGD)
     {
-        m_pMASGDHelper = make_shared<BasicModelAveragingSGD<ElemType>>(m_mpi, traceLevel, devID);
+		m_pMASGDHelper = GetBasicModelAveragingSGD<ElemType>(m_mpi, traceLevel, devID);
     }
     else if (GetParallelizationMethod() == ParallelizationMethod::blockMomentumSGD)
     {
@@ -2437,25 +2558,26 @@ void SGD<ElemType>::InitModelAggregationHandler(int traceLevel, DEVICEID_TYPE de
                 m_modelAggregationBlockSize);
         }
         else
-            m_pMASGDHelper = make_shared<BlockMomentumSGD<ElemType>>(m_mpi, traceLevel, devID,
-                                                                     m_useNesterovBlockMomentum, m_resetSGDMomentum,
-                                                                     m_blockLearningRate, m_blockMomentumAsTimeConstant,
-                                                                     m_modelAggregationBlockSize);
+			m_pMASGDHelper = GetBlockMomentumSGD<ElemType>(m_mpi, traceLevel, devID,
+															m_useNesterovBlockMomentum, m_resetSGDMomentum,
+															m_blockLearningRate, m_blockMomentumAsTimeConstant,
+															m_modelAggregationBlockSize);
 #endif
     }
 }
 
 // public:
-// UpdateWeights() - actual weight update, implementing various update rules
-template <class ElemType>
-void SGD<ElemType>::UpdateWeights(Matrix<ElemType>& functionValues, Matrix<ElemType>& gradientValues,
-                                  Matrix<ElemType>& smoothedGradientValues, double& smoothedCount,
-                                  const double learnRatePerSample, const double momentumPerSample,
-                                  size_t actualMBSize,
-                                  const double L2RegWeight, const double L1RegWeight,
-                                  const bool needAveMultiplier,
-                                  const bool useNesterovMomentum,
-                                  const bool disableMomentumUnitGain) const
+// UpdateWeightsImpl() - actual and typed weight update, implementing various update rules
+template <class SGDElemType>
+template<class ElemType>
+void SGD<SGDElemType>::UpdateWeightsImpl(Matrix<ElemType>& functionValues, Matrix<ElemType>& gradientValues,
+										 Matrix<ElemType>& smoothedGradientValues, double& smoothedCount,
+										 const double learnRatePerSample, const double momentumPerSample,
+										 size_t actualMBSize,
+										 const double L2RegWeight, const double L1RegWeight,
+										 const bool needAveMultiplier,
+										 const bool useNesterovMomentum,
+										 const bool disableMomentumUnitGain) const
 {
     // we use simple linear (instead of log linear) exponentiation here
     const double momentum = MomentumPerMB(momentumPerSample, actualMBSize);
@@ -2472,7 +2594,7 @@ void SGD<ElemType>::UpdateWeights(Matrix<ElemType>& functionValues, Matrix<ElemT
     assert(actualMBSize > 0);
 
     // clipping gradients to prevent outliers
-    ClipGradient(gradientValues, actualMBSize);
+    ClipGradient<ElemType>(gradientValues, actualMBSize);
 
     GradientsUpdateType adpType = GradUpdateType();
     double noiseStd = GradientUpdateNoiseStd();
@@ -2564,15 +2686,108 @@ void SGD<ElemType>::UpdateWeights(Matrix<ElemType>& functionValues, Matrix<ElemT
 #endif
 }
 
+template <class ElemType>
+template <class NodeElemType>
+void SGD<ElemType>::UpdateWeights(shared_ptr<ComputationNode<NodeElemType>> learnableNode,
+								  MatrixBasePtr smoothedGradient, double& smoothedCount,
+								  shared_ptr<ComputationNetwork> net,
+								  const double learnRatePerSample,
+								  const int epochNumber,
+								  size_t numSamplesInMinibatch)
+{
+	auto smoothedGradientPtr = dynamic_pointer_cast<Matrix<NodeElemType>>(smoothedGradient);
+
+	if (learnableNode->IsParameterUpdateRequired())
+	{
+#ifdef _DEBUG
+		if (smoothedGradientPtr->HasNan("TrainOneEpoch/UpdateWeights(): "))
+			LogicError("%ls %ls operation has NaNs in smoothedGradient.", learnableNode->NodeName().c_str(), learnableNode->OperationName().c_str());
+#endif
+		double nodeDependentLearningRatePerSample = learnRatePerSample * learnableNode->GetLearningRateMultiplier();
+		double nodeDependentRegMultiplier = dynamic_pointer_cast<LearnableParameter<NodeElemType>>(learnableNode)->GetRegMultiplier();
+		double momentumPerSample = GetMomentumPerSample(epochNumber /*BUGBUG workaround:*/, net->GetMBLayoutPtrOfNetwork()->GetNumParallelSequences());
+		// TODO: Check why l2Factor is not applied to L1. Bug?
+		// BUGBUG (Issue #95): Access to net MBLayout can no longer be done if we have multiple input layouts
+
+		UpdateWeightsImpl<>(learnableNode->Value(),
+							learnableNode->Gradient(),
+							*smoothedGradientPtr, smoothedCount,
+							nodeDependentLearningRatePerSample, momentumPerSample,
+							numSamplesInMinibatch,
+							m_L2RegWeight * nodeDependentRegMultiplier, m_L1RegWeight * nodeDependentRegMultiplier,
+							m_needAveMultiplier, m_useNesterovMomentum, m_disableMomentumUnitGain);
+
+		learnableNode->BumpEvalTimeStamp();
+#ifdef _DEBUG
+		if (learnableNode->Value().HasNan("TrainOneEpoch/UpdateWeights(): "))
+			LogicError("%ls %ls operation has NaNs in functionValues after parameter update.", learnableNode->NodeName().c_str(), learnableNode->OperationName().c_str());
+#endif
+	}
+}
+
+template <class ElemType>
+void SGD<ElemType>::MixedUpdateWeights(shared_ptr<ComputationNode<half>> learnableNode,
+									   MatrixBasePtr smoothedGradient, double& smoothedCount,
+									   shared_ptr<ComputationNetwork> net, 
+									   const double learnRatePerSample, 
+									   const int epochNumber,
+									   size_t numSamplesInMinibatch)
+{
+	auto compoundMatrixPtr = dynamic_pointer_cast<Matrix<float>>(smoothedGradient);
+	if (!compoundMatrixPtr)
+		RuntimeError("smoothedGradient cast error: type not matched.");
+
+	size_t numCols = learnableNode->Value().GetNumCols();
+	auto smoothedGradientMatrix = compoundMatrixPtr->ColumnSlice(0, numCols);
+	auto tempFP32GradMatrix = compoundMatrixPtr->ColumnSlice(numCols, numCols);
+	auto masterWeightMatrix = compoundMatrixPtr->ColumnSlice(2 * numCols, numCols);
+
+	if (learnableNode->IsParameterUpdateRequired())
+	{
+#ifdef _DEBUG
+		if (smoothedGradientMatrix.HasNan("TrainOneEpoch/MixedUpdateWeights(): "))
+			LogicError("%ls %ls operation has NaNs in smoothedGradient.", learnableNode->NodeName().c_str(), learnableNode->OperationName().c_str());
+#endif
+		double nodeDependentLearningRatePerSample = learnRatePerSample * learnableNode->GetLearningRateMultiplier();
+		double momentumPerSample = GetMomentumPerSample(epochNumber /*BUGBUG workaround:*/, net->GetMBLayoutPtrOfNetwork()->GetNumParallelSequences());
+		double nodeDependentRegMultiplier = dynamic_pointer_cast<LearnableParameter<half>>(learnableNode)->GetRegMultiplier();
+		// TODO: Check why l2Factor is not applied to L1. Bug?
+		// BUGBUG (Issue #95): Access to net MBLayout can no longer be done if we have multiple input layouts
+
+		// Gradient: FP16 -> FP32
+		tempFP32GradMatrix.CastAssignValuesOf(learnableNode->Gradient());
+
+		// Do Loss Unscaling
+		tempFP32GradMatrix.Scale(1.0f / (m_mixedTrainLossScaleFactor + 1e-9f), tempFP32GradMatrix);
+
+		UpdateWeightsImpl<float>(masterWeightMatrix, tempFP32GradMatrix,
+			smoothedGradientMatrix, smoothedCount,
+			nodeDependentLearningRatePerSample, momentumPerSample,
+			numSamplesInMinibatch,
+			m_L2RegWeight * nodeDependentRegMultiplier, m_L1RegWeight * nodeDependentRegMultiplier,
+			m_needAveMultiplier, m_useNesterovMomentum, m_disableMomentumUnitGain);
+
+		// Weight Value: FP32 -> FP16
+		learnableNode->Value().CastAssignValuesOf(masterWeightMatrix);
+			
+		learnableNode->BumpEvalTimeStamp();
+#ifdef _DEBUG
+		if (learnableNode->Value().HasNan("TrainOneEpoch/UpdateWeights(): "))
+			LogicError("%ls %ls operation has NaNs in functionValues after parameter update.", learnableNode->NodeName().c_str(), learnableNode->OperationName().c_str());
+#endif
+	}
+}
+
 // protected:
 template <class ElemType>
-void SGD<ElemType>::ClipGradient(Matrix<ElemType>& gradient, const size_t actualMBSize) const
+template <class ActualElemType>
+void SGD<ElemType>::ClipGradient(Matrix<ActualElemType>& gradient, const size_t actualMBSize) const
 {
     if (m_clippingThresholdPerSample != std::numeric_limits<double>::infinity())
     {
         double maxGradientPerMB = m_clippingThresholdPerSample * actualMBSize;
         if (m_gradientClippingWithTruncation)
-            gradient.InplaceTruncate((ElemType)(maxGradientPerMB));
+            gradient.InplaceTruncate((ActualElemType)(maxGradientPerMB));
         else
         {
             // norm2 normalized
@@ -2580,16 +2795,36 @@ void SGD<ElemType>::ClipGradient(Matrix<ElemType>& gradient, const size_t actual
             if (gradientNorm > maxGradientPerMB)
             {
                 double normFactor = maxGradientPerMB / gradientNorm;
-                gradient *= (ElemType) normFactor;
+                gradient *= (ActualElemType) normFactor;
             }
         }
     }
 }
 
 template <class ElemType>
+static void SaveSmoothedGradient(File& fstream, MatrixBasePtr& smoothedGradientPtr)
+{
+	auto typedSmoothedGradPtr = dynamic_pointer_cast<Matrix<ElemType>> (smoothedGradientPtr);
+	if (!typedSmoothedGradPtr)
+		RuntimeError("Failed to cast, type mismatch");
+	const Matrix<ElemType>& smoothedGradientValue = *typedSmoothedGradPtr;
+	fstream << smoothedGradientValue;
+}
+
+template <class ElemType>
+static void LoadSmoothedGradient(File& fstream, MatrixBasePtr& smoothedGradientPtr)
+{
+	auto typedSmoothedGradPtr = dynamic_pointer_cast<Matrix<ElemType>> (smoothedGradientPtr);
+	if (!typedSmoothedGradPtr)
+		RuntimeError("File to cast, type mismatch");
+	Matrix<ElemType>& smoothedGradientValue = *typedSmoothedGradPtr;
+	fstream >> smoothedGradientValue;
+}
+
+template <class ElemType>
 void SGD<ElemType>::SaveCheckPointInfo(const size_t epoch, const size_t totalSamplesSeen,
                                        const double learnRatePerSample,
-                                       const std::list<Matrix<ElemType>>& smoothedGradients,
+                                       const std::list<MatrixBasePtr>& smoothedGradients,
                                        const std::vector<double>& smoothedCounts,
                                        const double prevCriterion,
                                        const size_t minibatchSize)
@@ -2623,10 +2858,12 @@ void SGD<ElemType>::SaveCheckPointInfo(const size_t epoch, const size_t totalSam
 
             fstream.PutMarker(FileMarker::fileMarkerBeginSection, L"BGradient");
 
-            for (auto smoothedGradientIter = smoothedGradients.begin(); smoothedGradientIter != smoothedGradients.end(); smoothedGradientIter++)
+            for (auto smoothedGradientPtr : smoothedGradients)
             {
-                const Matrix<ElemType>& smoothedGradientValues = *smoothedGradientIter;
-                fstream << smoothedGradientValues;
+				if (UseMixedPrecisionTraining())
+					SaveSmoothedGradient<float>(fstream, smoothedGradientPtr);
+				else
+					SaveSmoothedGradient<ElemType>(fstream, smoothedGradientPtr);
             }
 
             fstream.PutMarker(FileMarker::fileMarkerEndSection, L"EGradient");
@@ -2666,7 +2903,7 @@ template <class ElemType>
 bool SGD<ElemType>::TryLoadCheckPointInfo(const size_t epochNumber,
                                           /*out*/ size_t& totalSamplesSeen,
                                           /*out*/ double& learnRatePerSample,
-                                          std::list<Matrix<ElemType>>& smoothedGradients,
+                                          std::list<MatrixBasePtr>& smoothedGradients,
                                           std::vector<double>& smoothedCounts,
                                           /*out*/ double& prevCriterion,
                                           /*out*/ size_t& minibatchSize)
@@ -2695,7 +2932,7 @@ template <class ElemType>
 void SGD<ElemType>::LoadCheckPointInfo(const size_t epochNumber,
                                        /*out*/ size_t& totalSamplesSeen,
                                        /*out*/ double& learnRatePerSample,
-                                       std::list<Matrix<ElemType>>& smoothedGradients,
+                                       std::list<MatrixBasePtr>& smoothedGradients,
                                        std::vector<double>& smoothedCounts,
                                        /*out*/ double& prevCriterion,
                                        /*out*/ size_t& minibatchSize)
@@ -2732,10 +2969,12 @@ void SGD<ElemType>::LoadCheckPointInfo(const size_t epochNumber,
 
     fstream.GetMarker(FileMarker::fileMarkerBeginSection, L"BGradient");
 
-    for (auto smoothedGradientIter = smoothedGradients.begin(); smoothedGradientIter != smoothedGradients.end(); smoothedGradientIter++)
+    for (auto smoothedGradientPtr : smoothedGradients)
     {
-        Matrix<ElemType>& smoothedGradientValues = *smoothedGradientIter;
-        fstream >> smoothedGradientValues;
+		if (UseMixedPrecisionTraining())
+			LoadSmoothedGradient<float>(fstream, smoothedGradientPtr);
+		else
+			LoadSmoothedGradient<ElemType>(fstream, smoothedGradientPtr);
     }
     fstream.GetMarker(FileMarker::fileMarkerEndSection, L"EGradient");
 
@@ -2940,6 +3179,7 @@ void SGD<ElemType>::MarkDropoutNodesEvalTimeStampAsOutdated(const ComputationNet
 
 template class SGD<float>;
 template class SGD<double>;
+template class SGD<half>;
 
 // =======================================================================
 // class SGDParams
@@ -2974,16 +3214,16 @@ static GradientsUpdateType ParseGradUpdateType(const wstring& s)
 
 static ParallelizationMethod ParseParallelizationMethod(const wstring& s)
 {
-    if (EqualCI(s, L"") || EqualCI(s, L"none"))
-        return ParallelizationMethod::none;
-    else if (EqualCI(s, L"DataParallelSGD"))
-        return ParallelizationMethod::dataParallelSGD;
-    else if (EqualCI(s, L"ModelAveragingSGD"))
-        return ParallelizationMethod::modelAveragingSGD;
-    else if (EqualCI(s, L"BlockMomentumSGD"))
-        return ParallelizationMethod::blockMomentumSGD;
-    else if (EqualCI(s, L"dataParallelASGD"))
-        return ParallelizationMethod::dataParallelASGD;
+	if (EqualCI(s, L"") || EqualCI(s, L"none"))
+		return ParallelizationMethod::none;
+	else if (EqualCI(s, L"DataParallelSGD"))
+		return ParallelizationMethod::dataParallelSGD;
+	else if (EqualCI(s, L"ModelAveragingSGD"))
+		return ParallelizationMethod::modelAveragingSGD;
+	else if (EqualCI(s, L"BlockMomentumSGD"))
+		return ParallelizationMethod::blockMomentumSGD;
+	else if (EqualCI(s, L"dataParallelASGD"))
+		return ParallelizationMethod::dataParallelASGD;
     else
         InvalidArgument("ParseParallelizationMethod: Invalid Parallelization Method. Valid values are (none | DataParallelSGD | ModelAveragingSGD | BlockMomentumSGD | dataParallelASGD)");
 }
@@ -3187,6 +3427,9 @@ SGDParams::SGDParams(const ConfigRecordType& configSGD, size_t sizeofElemType)
     m_needAveMultiplier = configSGD(L"normWithAveMultiplier", true);
     m_L2RegWeight = configSGD(L"L2RegWeight", 0.0);
     m_L1RegWeight = configSGD(L"L1RegWeight", 0.0);
+
+	// mixed training parameters
+	m_mixedTrainLossScaleFactor = configSGD(L"mixedTrainLossScaleFactor", 1.0f);
 
     // for backward support. future setups should use gradUpdateType='AdaGrad', instead of useAdagrad=true
     if (configSGD(L"useAdagrad", false))

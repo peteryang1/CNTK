@@ -2518,9 +2518,13 @@ void GPUMatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<
 template <>
 void GPUMatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<double>(){};
 template <>
+void GPUMatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<half>() {};
+template <>
 void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<float>(){};
 template <>
 void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<double>(){};
+template <>
+void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<half>() {};
 
 #pragma endregion GPUMatrixComputeStreamEvent functions
 
@@ -2673,7 +2677,7 @@ std::unique_ptr<BatchNormEngine<InoutType, StatType>> CuDnnBatchNormEngineFactor
 
 template class CuDnnBatchNormEngineFactory<float, float>;
 template class CuDnnBatchNormEngineFactory<double, double>;
-template class CuDnnBatchNormEngineFactory<half, float>;
+template class CuDnnBatchNormEngineFactory<half, half>;
 
 CudaTimer::~CudaTimer()
 {

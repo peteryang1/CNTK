@@ -179,6 +179,7 @@ private:
     float m_regMultiplier; // The multiplier to adjust the L1Reg and L2Reg for Learnable node
 };
 
+
 // -----------------------------------------------------------------------
 // DynamicAxisNode (/*no input*/)
 // This is a holder for MBLayout objects shared across inputs.

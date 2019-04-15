@@ -60,6 +60,8 @@ ImageConfigHelper::ImageConfigHelper(const ConfigParameters& config)
 
     // Identify precision
     string precision = config.Find("precision", "float");
+	if (AreEqualIgnoreCase(precision, "half") || AreEqualIgnoreCase(precision, "float16"))
+		precision = "float";
     if (AreEqualIgnoreCase(precision, "float"))
     {
         features.m_elementType = DataType::Float;

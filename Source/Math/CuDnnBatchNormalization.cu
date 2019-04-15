@@ -92,13 +92,25 @@ private:
     template<typename ElemType>
     static ElemType* ptr(Matrix<ElemType>& src)
     {
-        return src.Data();
+		ElemType* ret = src.Data();
+		if (ret == nullptr)
+		{
+			fprintf(stderr, "Find nullptr in Data() function of matrix\n");
+		}
+		return ret;
+        //return src.Data();
     }
 
     template<typename ElemType>
     static const ElemType* ptr(const Matrix<ElemType>& src)
     {
-        return src.Data();
+		const ElemType* ret = src.Data();
+		if (ret == nullptr)
+		{
+			fprintf(stderr, "Find nullptr in Data() function of matrix\n");
+		}
+		return ret;
+        //return src.Data();
     }
 
     static TensorShape GetInOutTensor(const TensorShape& inOutT)
@@ -138,7 +150,7 @@ private:
 
 template class CuDnnBatchNormEngine<float, float>;
 template class CuDnnBatchNormEngine<double, double>;
-template class CuDnnBatchNormEngine<half, float>;
+template class CuDnnBatchNormEngine<half, half>;
 
 template <typename InoutType, typename StatType>
 std::unique_ptr<BatchNormEngine<InoutType, StatType>> CuDnnBatchNormEngineFactory<InoutType, StatType>::Create(DEVICEID_TYPE deviceId, const TensorShape& inOutT,
@@ -149,7 +161,7 @@ std::unique_ptr<BatchNormEngine<InoutType, StatType>> CuDnnBatchNormEngineFactor
 
 template class CuDnnBatchNormEngineFactory<float, float>;
 template class CuDnnBatchNormEngineFactory<double, double>;
-template class CuDnnBatchNormEngineFactory<half, float>;
+template class CuDnnBatchNormEngineFactory<half, half>;
 
 CudaTimer::~CudaTimer()
 {

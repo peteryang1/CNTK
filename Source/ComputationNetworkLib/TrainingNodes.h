@@ -3789,7 +3789,7 @@ class BatchNormalizationNode : public ComputationNodeNonLooping<ElemType>, publi
         return L"BatchNormalization";
     }
 
-    typedef typename std::conditional<std::is_same<ElemType, half>::value, float, ElemType>::type StatType;
+    typedef typename ElemType StatType;
 
     // inputs
     // TODO: Change all of these throughout the codebase to 'class enum'. Also change all places where we still use integer constants.
@@ -4261,7 +4261,7 @@ public:
             if (paramLayout.GetRank() == 2 && paramLayout[0] == 0 && paramLayout[1] == 1 && inputLayout.GetNumElements() > 0) // [0 x 1]
             {
                 size_t total = m_spatial ? inputLayout.GetDims().back() : inputLayout.GetNumElements();
-                Input(i)->ValidateInferInputDimsFrom(TensorShape(total, 1));
+                TypedInput<StatType>(i)->ValidateInferInputDimsFrom(TensorShape(total, 1));
             }
         }
 #else

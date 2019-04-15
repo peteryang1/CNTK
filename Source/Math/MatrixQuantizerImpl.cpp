@@ -72,6 +72,8 @@ MatrixComputeStreamEvent::MatrixComputeStreamEvent(int deviceId)
 // Explicit template instantiations
 template MATH_API void MatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<float>();
 template MATH_API void MatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<double>();
+template <> MATH_API void MatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<half>() {}
 template MATH_API void MatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<float>();
 template MATH_API void MatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<double>();
+template MATH_API void MatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<half>();
 } } }

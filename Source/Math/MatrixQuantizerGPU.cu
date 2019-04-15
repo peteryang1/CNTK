@@ -380,6 +380,8 @@ void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent()
 // Explicit template instantiations
 template void GPUMatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<float>();
 template void GPUMatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<double>();
+template <> void GPUMatrixComputeStreamEvent::SynchronizeQuantizationComputeStreamWithEvent<half>() {}
 template void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<float>();
 template void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<double>();
+template void GPUMatrixComputeStreamEvent::SynchronizeDataTransferFetchStreamWithEvent<half>();
 } } }

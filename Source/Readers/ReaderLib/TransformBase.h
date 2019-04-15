@@ -23,6 +23,10 @@ public:
     {
         m_seed = config(L"seed", 0u);
         std::wstring precision = config(L"precision", L"float");
+
+		if (MSR_CNTK::AreEqualIgnoreCase(precision, L"half")) // mixed precision training, input data is float.
+			precision = L"float";
+
         if (MSR_CNTK::AreEqualIgnoreCase(precision, L"float"))
             m_precision = DataType::Float;
         else if (MSR_CNTK::AreEqualIgnoreCase(precision, L"double"))

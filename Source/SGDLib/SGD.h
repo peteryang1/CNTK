@@ -362,6 +362,9 @@ protected:
 
 
     LRAPIInfo m_lrapiInfo;
+
+	// mixed precision training parameters
+	float m_mixedTrainLossScaleFactor;
 };
 
 template <class ElemType>
@@ -425,6 +428,9 @@ public:
                IDataReader* validationSetDataReader,
                const DEVICEID_TYPE deviceID, const bool makeMode = true);
 
+	// mixed precision training
+	bool UseMixedPrecisionTraining() { return std::is_same<ElemType, half>::value; }
+
 protected:
 
     const std::vector<ComputationNodeBasePtr>& GetTrainCriterionNodes(ComputationNetworkPtr net);
@@ -458,7 +464,7 @@ protected:
                                   const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                   StreamMinibatchInputs* inputMatrices,
                                   const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                  std::list<Matrix<ElemType>>& smoothedGradients, std::vector<double> smoothedCounts,
+                                  std::list<MatrixBasePtr>& smoothedGradients, std::vector<double> smoothedCounts,
                                   const bool learnRateInitialized,
                                   const double largestPrevLearnRatePerSample);
 
@@ -474,7 +480,7 @@ protected:
                                          const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                          StreamMinibatchInputs* inputMatrices,
                                          const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                         std::list<Matrix<ElemType>>& smoothedGradients, std::vector<double> smoothedCounts,
+                                         std::list<MatrixBasePtr>& smoothedGradients, std::vector<double> smoothedCounts,
                                          /*out*/ EpochCriterion& epochCriterion,
                                          /*out*/ std::vector<EpochCriterion>& epochEvalErrors,
                                          std::string prefixMsg,
@@ -494,7 +500,7 @@ protected:
                                    const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                    StreamMinibatchInputs* inputMatrices,
                                    const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                   std::list<Matrix<ElemType>>& smoothedGradients, std::vector<double> smoothedCounts,
+                                   std::list<MatrixBasePtr>& smoothedGradients, std::vector<double> smoothedCounts,
                                    const double learningRateAdjustmentFactor);
 
     // uses a small percentage of training data of minibatch to
@@ -512,7 +518,7 @@ protected:
                                       const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                                       StreamMinibatchInputs* inputMatrices,
                                       const std::list<ComputationNodeBasePtr>& learnableNodes,
-                                      std::list<Matrix<ElemType>>& smoothedGradients, std::vector<double> smoothedCounts,
+                                      std::list<MatrixBasePtr>& smoothedGradients, std::vector<double> smoothedCounts,
                                       const size_t minMinibatchSize, const size_t maxMinibatchSize);
 
     // Attempts to compute the error signal for the whole utterance, which will
@@ -539,7 +545,7 @@ protected:
                          const std::vector<ComputationNodeBasePtr>& evaluationNodes,
                          StreamMinibatchInputs* inputMatrices,
                          const std::list<ComputationNodeBasePtr>& learnableNodes,
-                         std::list<Matrix<ElemType>>& smoothedGradients, std::vector<double>& smoothedCounts,
+                         std::list<MatrixBasePtr>& smoothedGradients, std::vector<double>& smoothedCounts,
                          /*out*/ EpochCriterion& epochCriterion,
                          /*out*/ std::vector<EpochCriterion>& epochEvalErrors,
                          const std::string& prefixMsg = "",
@@ -552,25 +558,43 @@ protected:
     void InitModelAggregationHandler(int traceLevel, DEVICEID_TYPE devID);
 public:
     // UpdateWeights() - actual weight update, implementing various update rules
-    void UpdateWeights(Matrix<ElemType>& functionValues, Matrix<ElemType>& gradientValues,
-                       Matrix<ElemType>& smoothedGradient, double& smoothedCount,
+	template <class ActualElemType = ElemType>
+    void UpdateWeightsImpl(Matrix<ActualElemType>& functionValues, Matrix<ActualElemType>& gradientValues,
+						   Matrix<ActualElemType>& smoothedGradient, double& smoothedCount,
                        const double learnRatePerSample, const double momentumPerSample,
                        size_t actualMBSize,
                        const double L2RegWeight, const double L1RegWeight,
                        const bool needAveMultiplier,
                        const bool useNesterovMomentum,
                        const bool disableMomentumUnitGain) const;
+	
+	template <class NodeElemType>
+	void UpdateWeights(std::shared_ptr<ComputationNode<NodeElemType>> learnableNode,
+					   MatrixBasePtr smoothedGradient, double& smoothedCount,
+					   shared_ptr<ComputationNetwork> net,
+					   const double learnRatePerSample,
+					   const int epochNumber,
+					   size_t numSamplesInMinibatch);
+	void MixedUpdateWeights(std::shared_ptr<ComputationNode<half>> learnableNode,
+						    MatrixBasePtr smoothedGradient, double& smoothedCounts,
+						    shared_ptr<ComputationNetwork> net,
+						    const double learnRatePerSample,
+						    const int epochNumber,
+						    size_t numSamplesInMinibatch);
+
     // return -1 if nothing exists
     int DetermineStartEpoch(const bool makeMode);
 
     wstring GetModelNameForEpoch(const int epoch, bool bLastModel = false) const;
 
 protected:
-    void ClipGradient(Matrix<ElemType>& gradient, const size_t actualMBSize) const;
+
+	template <class ActualElemType = ElemType>
+    void ClipGradient(Matrix<ActualElemType>& gradient, const size_t actualMBSize) const;
 
     void SaveCheckPointInfo(const size_t epoch, const size_t totalSamplesSeen, // TODO: combine totalSamplesSeen and prevCriterion into a EpochCriterion type
                             const double learnRatePerSample,
-                            const std::list<Matrix<ElemType>>& smoothedGradients,
+                            const std::list<MatrixBasePtr>& smoothedGradients,
                             const std::vector<double>& smoothedCounts,
                             const double prevCriterion,
                             const size_t minibatchSize);
@@ -578,14 +602,14 @@ protected:
     bool TryLoadCheckPointInfo(const size_t epochNumber,
                                /*out*/ size_t& totalSamplesSeen,
                                /*out*/ double& learnRatePerSample,
-                               std::list<Matrix<ElemType>>& smoothedGradients,
+                               std::list<MatrixBasePtr>& smoothedGradients,
                                std::vector<double>& smoothedCounts,
                                /*out*/ double& prevCriterion,
                                /*out*/ size_t& minibatchSize);
     void LoadCheckPointInfo(const size_t epochNumber,
                             /*out*/ size_t& totalSamplesSeen,
                             /*out*/ double& learnRatePerSample,
-                            std::list<Matrix<ElemType>>& smoothedGradients,
+                            std::list<MatrixBasePtr>& smoothedGradients,
                             std::vector<double>& smoothedCounts,
                             /*out*/ double& prevCriterion,
                             /*out*/ size_t& minibatchSize);
@@ -627,8 +651,8 @@ protected:
     size_t m_prevChosenMinibatchSize;
     double m_lastFinishedEpochTrainLoss;
 
-    std::shared_ptr<IDistGradAggregator<ElemType>> m_distGradAgg;
-    std::shared_ptr<struct DistGradHeader> m_gradHeader;
+    std::shared_ptr<IDistGradAggregator<ElemType>> m_distGradAgg; // aggregate gradients
+    std::shared_ptr<struct DistGradHeader> m_gradHeader; // aggregate criterion and errors
 
     shared_ptr<IMASGD<ElemType>> m_pMASGDHelper;
 

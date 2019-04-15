@@ -46,6 +46,8 @@ DataWriter::DataWriter(const ConfigRecordType& config)
     wstring writerType = config(L"writerType", L"Cntk.Reader.Binary.Deprecated");
 
     string precision = config(L"precision", "float");
+	if (precision == "half")
+		precision = "float";
 
     GetWriterProc getWriterProc = (GetWriterProc)Plugin::Load(writerType, GetWriterName(precision));
     m_dataWriter = NULL;

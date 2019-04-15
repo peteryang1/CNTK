@@ -624,7 +624,7 @@ inline cudaError_t SortPairsDescending(void *d_temp_storage, size_t &temp_storag
 {
     return cub::DeviceRadixSort::SortPairsDescending(d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, num_items, begin_bit, end_bit, stream);
 }
-inline cudaError_t SortPairsDescending(void *, size_t, const half *, half *, const uint64_t *, uint64_t *, int, int, int, cudaStream_t)
+inline cudaError_t SortPairsDescending(void *, size_t &, const half *, half *, const uint64_t *, uint64_t *, int , int , int , cudaStream_t )
 {
     RuntimeError("Unsupported template argument(half) in SortPairsDescending");
 }

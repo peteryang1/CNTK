@@ -4,6 +4,8 @@
 //
 #pragma once
 #include "Basics.h"
+#include "File.h"
+#include "half.hpp"
 #include <vector>
 #include <map>
 #include <stdexcept>
@@ -149,6 +151,12 @@ public:
     {
         return (float) (double) *this;
     }
+
+    // This can only be used for initialization of half
+	operator half() const
+	{
+		return (half) ((double) *this);
+	}
 
 private:
     long tolong() const

@@ -74,7 +74,7 @@ static bool SetRootGradientToScalarOne(ComputationNodeBasePtr nodep)
 //  - ForwardProp() for eval nodes
 //  - ForwardProp() for the training criterion (which will reuse computation results from the previous step)
 //  - Backprop() for the training criterion
-void ComputationNetwork::Backprop(const ComputationNodeBasePtr rootNode) // training criterion to compute the gradients for
+void ComputationNetwork::Backprop(const ComputationNodeBasePtr rootNode, bool mixedPrecisionTrain, float lossScaleFactor) // training criterion to compute the gradients for
 {
     if (!Environment().IsTraining())
         LogicError("Backprop: Requires network is to be in training mode.");
@@ -82,6 +82,16 @@ void ComputationNetwork::Backprop(const ComputationNodeBasePtr rootNode) // trai
     // initialize root gradient with a scalar value of 1.0
     if (!SetRootGradientToScalarOne<float>(rootNode) && !SetRootGradientToScalarOne<double>(rootNode))
         LogicError("Backprop: Training criterion is neither ComputationNode<float> nor ComputationNode<double>.");
+
+	// Loss Scale (Mixed precision training)
+	// see https://arxiv.org/pdf/1710.03740.pdf
+	if (mixedPrecisionTrain)
+	{
+		auto node = dynamic_pointer_cast<ComputationNode<float>>(rootNode);
+		if (node == nullptr)
+			RuntimeError("Error when doing Loss Scaling in Function TrainOneEpoch: Type Unmatch");
+		node->ResetGradient(lossScaleFactor);
+	}
 
     // reset all gradients below rootNode to zero (actually, internally, this is lazy, but we don't care here)
     ZeroInputGradients(rootNode);

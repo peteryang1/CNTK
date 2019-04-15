@@ -149,9 +149,9 @@ namespace Microsoft { namespace MSR { namespace CNTK {
              m_perfReporter.OnEpochStart();
          }
 
-         virtual void OnEpochEnd(const std::list<ComputationNodeBasePtr>&    LearnableNodes,
-                                    std::list<Matrix<ElemType>>&                smoothedGradient, 
-                                    size_t                                      samplesSinceLastSync 
+         virtual void OnEpochEnd(const std::list<ComputationNodeBasePtr>&		LearnableNodes,
+									   std::list<MatrixBasePtr>&				smoothedGradient, 
+                                       size_t                                   samplesSinceLastSync 
                                     )
          {
              m_MAworkerStatus[m_myRank] = MAWorkerStatus::DataEnd;
@@ -175,7 +175,7 @@ namespace Microsoft { namespace MSR { namespace CNTK {
 
          virtual bool OnArrivingAtSyncPoint(
             const std::list<ComputationNodeBasePtr>& LearnableNodes,        /* input/output: */
-            std::list<Matrix<ElemType>>& smoothedGradient,                  /* input/output: under some setup, it will reset to zero*/
+            std::list<MatrixBasePtr>& smoothedGradient,                  /* input/output: under some setup, it will reset to zero*/
             size_t  samplesSinceLastSync                                    /* input:  samples processed since last sync on this worker only */
              )
          {
@@ -199,7 +199,7 @@ namespace Microsoft { namespace MSR { namespace CNTK {
          virtual void ModelAggregationProcessing(
              size_t samplesSinceLastSync,                                       /* in: */
              const std::list<ComputationNodeBasePtr>&  learnableNodes,          /* in/out */
-             std::list<Matrix<ElemType>>&              smoothedGradient,        /* in/out */
+             std::list<MatrixBasePtr>&	               smoothedGradient,        /* in/out */
              size_t&                                   totalSamplesProcessed,   /* out */
              float&                                    secondsOnCommunication   /* out */) = 0; 
          
@@ -346,7 +346,7 @@ namespace Microsoft { namespace MSR { namespace CNTK {
         void ModelAggregationProcessing(
             size_t samplesSinceLastSync,                                       /* in */
             const std::list<ComputationNodeBasePtr>&  learnableNodes,          /* in/out */
-            std::list<Matrix<ElemType>>&              smoothedGradient,        /* in/out */
+            std::list<MatrixBasePtr>&		          smoothedGradient,        /* in/out */
             size_t&                                   totalSamplesProcessed,   /* out */
             float&                                    secondsOnCommunication   /* out */) override
             // NOTE: the variable type is determined by the interface in SGD::TrainOneEpoch
