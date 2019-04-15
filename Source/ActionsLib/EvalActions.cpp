@@ -101,6 +101,7 @@ void DoEval(const ConfigParameters& config)
 
 template void DoEval<double>(const ConfigParameters& config);
 template void DoEval<float>(const ConfigParameters& config);
+template void DoEval<half>(const ConfigParameters& config);
 
 // ===========================================================================
 // DoCrossValidate() - implements CNTK "cv" command

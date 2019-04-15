@@ -249,9 +249,13 @@ bool DispatchThisAction<half>(const string &thisAction, const ConfigParameters &
 	{
 		DoTrain<ConfigParameters, half>(commandParams);
 	}
+    else if (thisAction == "test" || thisAction == "eval")
+	{
+		DoEval<half>(commandParams);
+	}
 	else
 	{
-		RuntimeError("half only supported for action train or trainRNN.");
+		RuntimeError("half only supported for action train, eval(test) or trainRNN.");
 	}
 	return true;
 }
