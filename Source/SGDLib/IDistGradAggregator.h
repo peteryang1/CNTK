@@ -18,6 +18,7 @@ public:
 
     // Returns a boolean indicating if any samples were processed
     virtual bool AggregateGradients(const std::vector<Matrix<ElemType>*>& gradients, DistGradHeader* headerCPU, bool resetState) = 0;
+	virtual bool AggregateGradients(const std::vector<TypedMatrixPtr>& gradients, DistGradHeader* headerCPU, bool resetState) = 0;
 
     size_t NumProc()
     {

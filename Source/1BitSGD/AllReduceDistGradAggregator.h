@@ -233,6 +233,13 @@ public:
             return (headerCPU->numSamples != 0);
         }
     }
+	bool AggregateGradients(const std::vector<TypedMatrixPtr>& gradients, DistGradHeader* headerCPU, bool resetState) override
+	{
+		NOT_IMPLEMENTED;
+		return false;
+	}
+
+
 
     void AggregateGradientsImpl(const std::vector<Matrix<ElemType>*>& gradients, DistGradHeader* headerCPU, bool showSyncPerfStats)
     {

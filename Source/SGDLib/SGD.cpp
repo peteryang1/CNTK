@@ -1123,6 +1123,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
     }
 
     std::vector<Matrix<ElemType>*> learnParamsGradients;
+	std::vector<TypedMatrixPtr> typedLearnParamsGradients;
     Profiler profiler(m_numMBsToCUDAProfile);
 
     // resetting this, so profiling is performed for one epoch only
@@ -1460,6 +1461,51 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
         }
         else
         {
+			if (useMixedPrecisionTraining)
+			{
+				if (typedLearnParamsGradients.empty())
+				{
+					typedLearnParamsGradients.reserve(learnableNodes.size());
+					for (auto node : learnableNodes)
+					{
+						auto nodeFloat = dynamic_pointer_cast<ComputationNode<float>>(node);
+						auto nodeDouble = dynamic_pointer_cast<ComputationNode<double>>(node);
+						auto nodeHalf = dynamic_pointer_cast<ComputationNode<half>>(node);
+						if (node->IsParameterUpdateRequired())
+						{
+							MatrixBasePtr gradMatrixPtr, valueMatrixPtr;
+							if (nodeFloat)
+							{
+								gradMatrixPtr = nodeFloat->GradientPtr();
+								valueMatrixPtr = nodeFloat->ValuePtr();
+							}
+							else if (nodeDouble)
+							{
+								gradMatrixPtr = nodeDouble->GradientPtr();
+								valueMatrixPtr = nodeDouble->ValuePtr();
+							}
+							else if (nodeHalf)
+							{
+								gradMatrixPtr = nodeHalf->GradientPtr();
+								valueMatrixPtr = nodeHalf->ValuePtr();
+							}
+							else
+								RuntimeError("Type is not support.");
+							TypedMatrixPtr typedGradMatrixPtr(gradMatrixPtr);
+							TypedMatrixPtr typedValueMatrixPtr(valueMatrixPtr);
+
+							if (typedGradMatrixPtr.GetNumCols() == 0)
+							{
+								typedGradMatrixPtr.Resize(typedValueMatrixPtr.GetNumRows(), typedValueMatrixPtr.GetNumCols());
+							}
+
+							typedLearnParamsGradients.push_back(typedGradMatrixPtr);
+						}
+					}
+				}
+			}
+			else
+			{
             // distributed gradient aggregation
             if (learnParamsGradients.size() == 0)
             {
@@ -1484,6 +1530,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                     }
                 }
             }
+		}
 
             // hoist the criterion into CPU space for all-reduce
             localEpochCriterion.Assign(0, numSamplesWithLabelOfNetwork);
@@ -1500,7 +1547,11 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 
             // aggregate
             m_gradHeader->numEvalNode = evaluationNodes.size(); // TODO: rename numEvalNode (plural)
-            bool samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), isFirstMinibatch);
+			bool samplesProcessed;
+			if (useMixedPrecisionTraining)
+				m_distGradAgg->AggregateGradients(typedLearnParamsGradients, m_gradHeader.get(), isFirstMinibatch);
+			else
+				samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), isFirstMinibatch);
             noMoreSamplesToProcess = !samplesProcessed;
 
             // read out the header--now everything is aggregated

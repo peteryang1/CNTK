@@ -146,6 +146,28 @@ public:
             return (headerCPU->numSamples != 0);
         }
     }
+	bool AggregateGradients(const std::vector<TypedMatrixPtr>& gradients, DistGradHeader* headerCPU, bool resetState) override 
+	{
+		if (m_mpi->NumNodesInUse() == 1) // No need to aggregate anything.
+			return (headerCPU->numSamples != 0);
+
+		if (m_useAsyncAggregation)
+			RuntimeError("Currently we do not support async mix-typed aggregation.");
+
+		// Initialize NCCL
+		if (m_nccl == nullptr)
+			m_nccl.reset(new NcclComm(::CNTK::DeviceDescriptor::UseDefaultDevice().Id(), m_mpi));
+
+		if (!m_nccl->IsSupported())
+			RuntimeError("Can not do mix-typed aggregation without NCCL.");
+
+		ResetState(gradients, headerCPU->numEvalNode, resetState);
+		bool showSyncPerfStats = (m_syncStatsTrace > 0) && ((m_iterationCount % m_syncStatsTrace) == 0);
+		m_iterationCount++;
+
+		AggregateGradientsImpl(gradients, headerCPU, showSyncPerfStats);
+		return (headerCPU->numSamples != 0);
+	}
 
 private:
     std::shared_ptr<ElemType> AllocateIntermediateBuffer(int deviceID, size_t numElements)
@@ -170,6 +192,42 @@ private:
             return false;
 
         return true;
+    }
+
+    void ResetState(const std::vector<TypedMatrixPtr>& gradients, int numEvalNodes, bool resetState)
+    {
+        // When called the first time let's setup the intermediateCPU buffers for gradient aggregation if needed
+        if (!m_initialized)
+        {
+            m_initialized = true;
+            int deviceId = gradients[0].GetDeviceId();
+
+            // Initial preparation for data copy from GPU to CPU
+            if (ShouldCopyDataToCPU(deviceId))
+            {
+                m_allocator.reset(new CUDAPageLockedMemAllocator(deviceId));
+            }
+
+            for (size_t i = 0; i < gradients.size(); i++)
+            {
+				m_gradientIndexToAggregate.push_back(i);
+                // Make sure none of the gradient matrixes are sparse - we currently do not support aggregation of sparse gradient matrices
+                if (gradients[i].GetMatrixType() != DENSE)
+                    RuntimeError("Gradient aggregation for sparse gradient matrices is currently unsupported!");  
+            }
+
+            if (m_mpi->IsMainNode())
+            {
+                for (size_t i = 0; i < NumProc() - 1; ++i)
+                    m_recvHeaders.push_back(DistGradHeader::Create(numEvalNodes));
+            }
+        }
+        else if (resetState)
+        {
+            // Make sure there is no pending async aggregation
+            if (m_useAsyncAggregation && m_pendingAsyncAggregation.valid())
+                LogicError("Unexpected pending async gradient aggregation found when resetting aggregator state!");
+        }
     }
 
     void ResetState(const std::vector<Matrix<ElemType>*>& gradients, int numEvalNodes, bool resetState)
@@ -516,65 +574,15 @@ private:
         }
     }
 
-private:
-    std::unique_ptr<CUDAPageLockedMemAllocator> m_allocator;
-
-    std::vector<std::shared_ptr<ElemType>> m_intermediateCPUBuffers;
-    std::vector<std::unique_ptr<GPUDataTransferer>> m_gpuDataTransferers;
-
-    std::vector<DistGradHeader*> m_recvHeaders;
-
-    // Perform aysnchronous gradient aggregation using double buffering of the gradient matrices
-    bool m_useAsyncAggregation;
-
-    // Future corresponding to the current in-flight async gradient aggregation
-    std::future<void> m_pendingAsyncAggregation;
-
-    // Buffered gradients that we asynchronously aggregate
-    std::unordered_map<Matrix<ElemType>*, std::unique_ptr<Matrix<ElemType>>> m_bufferedGradients;
-    DistGradHeader* m_bufferedGradHeader;
-
-    // Packing small gradients (size not larger than threshold size) into a continous buffer to reduce MPI calls.
-    // Threshold size to pack a gradient into the continous buffer, default 32KB (tunable by define "packThresholdSizeInKB=[value]")
-    const size_t m_packThresholdSizeInBytes;
-    std::unique_ptr<Matrix<ElemType>> m_aggregationBuffer;
-    std::vector<size_t> m_packedGradientsIndex;
-    std::vector<size_t> m_gradientIndexToAggregate;
-
-    int m_syncStatsTrace;
-
-    // Only used for controlling frequency of measuring/showing gradient aggregation perf stats
-    size_t m_iterationCount;
-
-    bool m_initialized;
-
-    std::unique_ptr<NcclComm> m_nccl;
-};
-
-template <>
-void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Matrix<half>*>& gradients, DistGradHeader * headerCPU, bool showSyncPerfStats)
+	void AggregateGradientsImpl(const std::vector<TypedMatrixPtr>& gradients, DistGradHeader* headerCPU, bool showSyncPerfStats)
 {
 	Timer aggregationTimer;
-	int deviceId = gradients[0]->GetDeviceId();
+		int deviceId = gradients[0].GetDeviceId();
 
 	// Make sure we are on GPU
 	if (!IsGpu(deviceId))
 	{
 		fprintf(stderr, "Half is only supported on GPU(NCCL).\n");
-		NOT_IMPLEMENTED;
-	}
-
-	// Check NCCL support.
-	if (!m_nccl->IsSupported())
-	{
-		fprintf(stderr, "FP16 gradient aggregation can only be performed using nccl.\n");
-		NOT_IMPLEMENTED;
-	}
-
-	// Make sure we are using sunchronous aggregation.
-	if (m_useAsyncAggregation)
-	{
-		fprintf(stderr, "Not support asynchronous aggregation for half.\n");
 		NOT_IMPLEMENTED;
 	}
 
@@ -596,15 +604,7 @@ void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Ma
 
 		// If the current node did not process any samples, the gradients should be zero'd
 		for (size_t i = 0; i < numGradMatrices; ++i)
-			gradients[i]->SetValue(0);
-	}
-
-	// Copy all gradient data into a single contiguous buffer, if additional continous buffer allocated
-	size_t offset = 0;
-	for (size_t i : m_packedGradientsIndex)
-	{
-		m_aggregationBuffer->ColumnSlice(offset, gradients[i]->GetNumElements()).AssignValuesOf(gradients[i]->Reshaped(1, gradients[i]->GetNumElements()));
-		offset += gradients[i]->GetNumElements();
+				gradients[i].SetValue(0);
 	}
 
 	// Initiate receive of the header on the main node
@@ -624,8 +624,8 @@ void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Ma
 	if (!m_mpi->IsMainNode())
 		m_mpi->Isend(headerCPU, headerCPU->Size(), MPI_CHAR, m_mpi->MainNodeRank(), numGradMatrices, &sendHeaderRequest) || MpiFail("MPI_Isend");
 
-	// Perform sync allreduce on the gradient data
 	size_t numGradientIndex = m_gradientIndexToAggregate.size();
+
 	if (numGradientIndex > 0)
 	{
 #ifdef __PROFILE__
@@ -636,13 +636,36 @@ void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Ma
 			LOGPRINTF(stderr, "deviceId = %d\n", deviceId);
 			LOGPRINTF(stderr, "m_nccl->IsSupported() = %d\n", m_nccl->IsSupported());
 		}
+			if (logCounter++ % 100 == 0)
+				LOGPRINTF(stderr, "AggregateGradientsImpl Branch3 : m_nccl->IsSupported() == true \n");
 #endif
-		std::vector<Matrix<half>*> ncclReduceGradients;
+			std::vector<Matrix<float>*> floatNcclReduceGradients;
+			std::vector<Matrix<double>*> doubleNcclReduceGradients;
+			std::vector<Matrix<half>*> halfNcclReduceGradients;
 		for (size_t i : m_gradientIndexToAggregate)
 		{
-			ncclReduceGradients.push_back((i == -1) ? m_aggregationBuffer.get() : gradients[i]);
+				auto currentGradient = gradients[i];
+				switch (currentGradient.GetType())
+				{
+				case MatrixElemType::FLOAT:
+					floatNcclReduceGradients.push_back(currentGradient.GetFloatMatrixPtr().get());
+					break;
+				case MatrixElemType::DOUBLE:
+					doubleNcclReduceGradients.push_back(currentGradient.GetDoubleMatrixPtr().get());
+					break;
+				case MatrixElemType::HALF:
+					halfNcclReduceGradients.push_back(currentGradient.GetHalfMatrixPtr().get());
+					break;
+				default:
+					RuntimeError("Type is not supported.");
+				}
 		}
-		m_nccl->AllReduce(ncclReduceGradients);
+			if (!floatNcclReduceGradients.empty())
+				m_nccl->AllReduce(floatNcclReduceGradients);
+			if (!doubleNcclReduceGradients.empty())
+				m_nccl->AllReduce(doubleNcclReduceGradients);
+			if (!halfNcclReduceGradients.empty())
+				m_nccl->AllReduce(halfNcclReduceGradients);
 	}
 
 	// On the main node wait for the headers to arrive and aggregate
@@ -669,16 +692,7 @@ void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Ma
 	// Broadcast the aggregated header to all nodes
 	m_mpi->Bcast(headerCPU, headerCPU->Size(), MPI_CHAR, m_mpi->MainNodeRank());
 
-	// Only NCCL is supported
 	m_nccl->Sync();
-
-	// Copy data back to the packed gradients from the continous buffer
-	offset = 0;
-	for (size_t i : m_packedGradientsIndex)
-	{
-		gradients[i]->AssignValuesOf(m_aggregationBuffer->ColumnSlice(offset, gradients[i]->GetNumElements()).Reshaped(gradients[i]->GetNumRows(), gradients[i]->GetNumCols()));
-		offset += gradients[i]->GetNumElements();
-	}
 
 	// Wait for completion of the async send requests
 	if (!m_mpi->IsMainNode())
@@ -692,6 +706,51 @@ void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Ma
 	}
 }
 
+
+private:
+    std::unique_ptr<CUDAPageLockedMemAllocator> m_allocator;
+
+    std::vector<std::shared_ptr<ElemType>> m_intermediateCPUBuffers;
+    std::vector<std::unique_ptr<GPUDataTransferer>> m_gpuDataTransferers;
+
+    std::vector<DistGradHeader*> m_recvHeaders;
+
+    // Perform aysnchronous gradient aggregation using double buffering of the gradient matrices
+    bool m_useAsyncAggregation;
+
+    // Future corresponding to the current in-flight async gradient aggregation
+    std::future<void> m_pendingAsyncAggregation;
+
+    // Buffered gradients that we asynchronously aggregate
+    std::unordered_map<TypedMatrixPtr, TypedMatrixPtr> m_typedBufferedGradients;
+	std::unordered_map<Matrix<ElemType>*, std::unique_ptr<Matrix<ElemType>>> m_bufferedGradients;
+    DistGradHeader* m_bufferedGradHeader;
+
+    // Packing small gradients (size not larger than threshold size) into a continous buffer to reduce MPI calls.
+    // Threshold size to pack a gradient into the continous buffer, default 32KB (tunable by define "packThresholdSizeInKB=[value]")
+    const size_t m_packThresholdSizeInBytes;
+
+	std::unique_ptr<Matrix<ElemType>> m_aggregationBuffer;
+	std::vector<size_t> m_packedGradientsIndex;
+    std::vector<size_t> m_gradientIndexToAggregate;
+
+
+    int m_syncStatsTrace;
+
+    // Only used for controlling frequency of measuring/showing gradient aggregation perf stats
+    size_t m_iterationCount;
+
+    bool m_initialized;
+
+    std::unique_ptr<NcclComm> m_nccl;
+};
+
+template <>
+void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Matrix<half>*>& , DistGradHeader* , bool )
+{
+	// Should use another version.
+	NOT_IMPLEMENTED;
+}
 
 }
 }
