@@ -186,7 +186,7 @@ static shared_ptr<ComputationNode<ElemType1>> CreateNode2(const std::wstring& no
 {
 	// check more types
 	if (nodeType == MixedTypedOperationNameOf(CastNode)) return New<CastNode<ElemType1, ElemType2>>(forward<_Types>(_Args)...);
-	else RuntimeError("CreateNode2: unsupport nodeType - %s", nodeType.c_str());
+	else RuntimeError("CreateNode2: unsupport nodeType - %ls", nodeType.c_str());
 }
 
 // this function is called from SimpleNetworkBuilder and old NDL
