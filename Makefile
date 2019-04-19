@@ -663,6 +663,7 @@ EVAL:=Cntk.Eval-$(CNTK_COMPONENT_VERSION)
 
 SGDLIB_SRC=\
 	$(SOURCEDIR)/SGDLib/ASGDHelper.cpp \
+	$(SOURCEDIR)/SGDLib/SimpleDistGradAggregatorHelper.cpp \
 	$(SOURCEDIR)/SGDLib/Profiler.cpp \
 	$(SOURCEDIR)/SGDLib/SGD.cpp \
 	$(SOURCEDIR)/SGDLib/PostComputingActions.cpp \
