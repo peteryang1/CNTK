@@ -2677,7 +2677,7 @@ std::unique_ptr<BatchNormEngine<InoutType, StatType>> CuDnnBatchNormEngineFactor
 
 template class CuDnnBatchNormEngineFactory<float, float>;
 template class CuDnnBatchNormEngineFactory<double, double>;
-template class CuDnnBatchNormEngineFactory<half, half>;
+template class CuDnnBatchNormEngineFactory<half, float>;
 
 CudaTimer::~CudaTimer()
 {

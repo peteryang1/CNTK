@@ -303,16 +303,16 @@ DelayLayer {T=1, defaultHiddenActivation=0} =
 BatchNormalizationLayer {spatialRank = 0,  # reduce over these dims. E.g. 2 to reduce over (w,h) in a [W x H x C]-shaped input
                          initialScale = 1,
                          normalizationTimeConstant = 5000, blendTimeConstant = 0,
-                         epsilon = 0.00001, useCntkEngine = false, disableRegularization = false, localPrecision=precision} =
+                         epsilon = 0.00001, useCntkEngine = false, disableRegularization = false, statsPrecision=precision} =
 {
     #normShape   = _ConcatArrays (Repeat (spatialRank, 1), 0) # spatial dims get a dimension of 1 (broadcasting, while all others are inferred from input)
     normShape   = (0:1)  # TODO: Update this once we support broadcasting-style parameters.
-    scale       = ParameterTensor {normShape, initValue = initialScale, precision=localPrecision}
-    bias        = ParameterTensor {normShape, initValue = 0, precision=localPrecision}
-    runMean     = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0, precision=localPrecision} # note: disable learning since these are updated differently
-    runVariance = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0, precision=localPrecision}
-    runCount    = ParameterTensor {(1),       initValue = 0, learningRateMultiplier = 0, precision=localPrecision}
-    apply (x)   = BatchNormalization (x, scale, bias, runMean, runVariance, runCount=runCount, spatial=(spatialRank > 0), normalizationTimeConstant=normalizationTimeConstant, blendTimeConstant=blendTimeConstant, epsilon=epsilon, useCntkEngine=useCntkEngine, disableRegularization=disableRegularization, precision=localPrecision)
+    scale       = ParameterTensor {normShape, initValue = initialScale, precision=statsPrecision}
+    bias        = ParameterTensor {normShape, initValue = 0, precision=statsPrecision}
+    runMean     = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0, precision=statsPrecision} # note: disable learning since these are updated differently
+    runVariance = ParameterTensor {normShape, initValue = 0, learningRateMultiplier = 0, precision=statsPrecision}
+    runCount    = ParameterTensor {(1),       initValue = 0, learningRateMultiplier = 0, precision=statsPrecision}
+    apply (x)   = BatchNormalization (x, scale, bias, runMean, runVariance, runCount=runCount, spatial=(spatialRank > 0), normalizationTimeConstant=normalizationTimeConstant, blendTimeConstant=blendTimeConstant, epsilon=epsilon, useCntkEngine=useCntkEngine, disableRegularization=disableRegularization)
 }.apply
 
 # LayerNormalizationLayer -- create a layer-normalization layer

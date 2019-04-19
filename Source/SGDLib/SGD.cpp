@@ -1503,34 +1503,34 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 						}
 					}
 				}
-			}
+			}	
 			else
 			{
-            // distributed gradient aggregation
-            if (learnParamsGradients.size() == 0)
-            {
-                // lazily form the list of smoothedGradients to exchange
-                learnParamsGradients.reserve(learnableNodes.size());
-                for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++)
-                {
-                    ComputationNodePtr node = dynamic_pointer_cast<ComputationNode<ElemType>>(*nodeIter);
-                    if (node->IsParameterUpdateRequired())
-                    {
-                        Matrix<ElemType>* currParamsGradient = &(node->Gradient()); // TODO: we can use shared_ptrs now
+				// distributed gradient aggregation
+				if (learnParamsGradients.size() == 0)
+				{
+					// lazily form the list of smoothedGradients to exchange
+					learnParamsGradients.reserve(learnableNodes.size());
+					for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++)
+					{
+						ComputationNodePtr node = dynamic_pointer_cast<ComputationNode<ElemType>>(*nodeIter);
+						if (node->IsParameterUpdateRequired())
+						{
+							Matrix<ElemType>* currParamsGradient = &(node->Gradient()); // TODO: we can use shared_ptrs now
 
-                        // Sometimes, in parallel training, the current node may not get any samples to process
-                        // In this case, the gradient matrix may not have been sized yet. If so, lets size it.
-                        if (currParamsGradient->GetNumCols() == 0)
-                        {
-                            Matrix<ElemType>* currParamsValues = &(node->Value());
-                            currParamsGradient->Resize(currParamsValues->GetNumRows(), currParamsValues->GetNumCols());
-                        }
+							// Sometimes, in parallel training, the current node may not get any samples to process
+							// In this case, the gradient matrix may not have been sized yet. If so, lets size it.
+							if (currParamsGradient->GetNumCols() == 0)
+							{
+								Matrix<ElemType>* currParamsValues = &(node->Value());
+								currParamsGradient->Resize(currParamsValues->GetNumRows(), currParamsValues->GetNumCols());
+							}
 
-                        learnParamsGradients.push_back(currParamsGradient);
-                    }
-                }
-            }
-		}
+							learnParamsGradients.push_back(currParamsGradient);
+						}
+					}
+				}
+			}
 
             // hoist the criterion into CPU space for all-reduce
             localEpochCriterion.Assign(0, numSamplesWithLabelOfNetwork);
@@ -1549,7 +1549,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
             m_gradHeader->numEvalNode = evaluationNodes.size(); // TODO: rename numEvalNode (plural)
 			bool samplesProcessed;
 			if (useMixedPrecisionTraining)
-				m_distGradAgg->AggregateGradients(typedLearnParamsGradients, m_gradHeader.get(), isFirstMinibatch);
+				samplesProcessed = m_distGradAgg->AggregateGradients(typedLearnParamsGradients, m_gradHeader.get(), isFirstMinibatch);
 			else
 				samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), isFirstMinibatch);
             noMoreSamplesToProcess = !samplesProcessed;
@@ -1574,8 +1574,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                 else
                     epochEvalErrors[i] += m_gradHeader->evalErrors[i];
             }
-        }
-
+		}
         ProfilerTimeEnd(profGradientAgg, profilerEvtMainGradient);
         auto profWeights = ProfilerTimeBegin();
 
@@ -1839,11 +1838,11 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                 LOGPRINTF(stderr, "SGD: Saving checkpoint model '%ls'\n", (m_modelPath + L"-Iter" + to_wstring(m_lrapiInfo.iter)).c_str());
             net->Save(m_modelPath + L"-Iter" + to_wstring(m_lrapiInfo.iter));
         }
-    }
+	}
 
     // --- END MAIN MINIBATCH LOOP
-
-    if (useModelAggregation)
+	
+	if (useModelAggregation)
     {
         m_pMASGDHelper->OnEpochEnd(learnableNodes, smoothedGradients, nSamplesSinceLastModelSync);
         nSamplesSinceLastModelSync = 0;

@@ -475,28 +475,8 @@ std::unique_ptr<BatchNormEngine<InoutType, StatType>> BatchNormEngine<InoutType,
     RuntimeError("Could not find appropriate batch normalization engine.");
 }
 
-template <>
-std::unique_ptr<BatchNormEngine<half, half>> BatchNormEngine<half, half>::Create(
-	DEVICEID_TYPE deviceId, const TensorShape& inOutT,
-	bool spatial, ImageLayoutKind imageLayout,
-	BatchNormEngineKind enabledEngines)
-{
-	if (HasFlag(enabledEngines, BatchNormEngineKind::Cntk))
-		RuntimeError("CNTK batchnorm engine is not supported in mixed precision training.");
-	
-	if (HasFlag(enabledEngines, BatchNormEngineKind::CuDnn))
-	{
-		if (GetMathLibTraceLevel() > 0)
-			fprintf(stderr, "Using cnDNN batch normalization engind.\n");
-
-		return CuDnnBatchNormEngineFactory<half, half>::Create(deviceId, inOutT, spatial, imageLayout);
-	}
-
-	RuntimeError("Could not find appropriate batch normalization engine.");
-}
-
 template class BatchNormEngine<float, float>;
 template class BatchNormEngine<double, double>;
-template class BatchNormEngine<half, half>;
+template class BatchNormEngine<half, float>;
 
 }}}
