@@ -746,7 +746,7 @@ private:
 };
 
 template <>
-void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Matrix<half>*>& , DistGradHeader* , bool )
+inline void SimpleDistGradAggregator<half>::AggregateGradientsImpl(const std::vector<Matrix<half>*>& , DistGradHeader* , bool )
 {
 	// Should use another version.
 	NOT_IMPLEMENTED;
