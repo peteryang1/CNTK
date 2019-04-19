@@ -211,7 +211,7 @@ static void InitializeSmoothedGradient(
 	vector<wstring>& nodesToUpdateDescriptions,
 	size_t& numParameters,
 	bool useMixedPrecisionTraining, 
-	DEVICE_TYPE deviceId)
+	DEVICEID_TYPE deviceId)
 {
 	// Note: We don't actually need the smoothedGradients if !IsParameterUpdateRequired().
 	// However, this is hard to fix since lots of code assumes smoothedGradients to be in the same order as learnableNodes.
