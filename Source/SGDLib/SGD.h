@@ -80,9 +80,9 @@ enum class AdjustType : int
     Inv,
     Exp,
     Step,
-    Cosine,
-    Linear_Cosine,
-    Noisy_Linear_Cosine
+	Cosine,
+	Linear_Cosine,
+	Noisy_Linear_Cosine
 };
 
 
@@ -126,10 +126,10 @@ struct LRAPIInfo
     double base_;
     double gamma;
     double power;
-    double beta;
-    double num_periods;
-    double initial_variance;
-    double variance_decay;
+	double beta;
+	double num_periods;
+	double initial_variance;
+	double variance_decay;
     size_t numItersToShowLR;
     size_t numItersToSaveModel;
     bool reachMaxIter = false;
@@ -662,6 +662,10 @@ protected:
     std::shared_ptr<struct DistGradHeader> m_gradHeader; // aggregate criterion and errors
 
     shared_ptr<IMASGD<ElemType>> m_pMASGDHelper;
+
+	// used for mixed precision training.
+	std::map<std::wstring, std::shared_ptr<Matrix<float>>> m_masterWeights;
+	std::map<std::wstring, std::shared_ptr<Matrix<float>>> m_FP32GradBuffer;
 
 private:
     void MarkDropoutNodesEvalTimeStampAsOutdated(const ComputationNetworkPtr& net, const ComputationNodeBasePtr& criterionNode);

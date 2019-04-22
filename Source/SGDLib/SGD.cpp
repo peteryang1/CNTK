@@ -211,12 +211,12 @@ static void CopyBestEpochs(
 
 template <class NodeElemType>
 static void InitializeSmoothedGradient(
-	shared_ptr<ComputationNode<NodeElemType>> node, 
-	list<MatrixBasePtr>& smoothedGradients, 
-	vector<double>& smoothedCounts, 
+	shared_ptr<ComputationNode<NodeElemType>> node,
+	list<MatrixBasePtr>& smoothedGradients,
+	vector<double>& smoothedCounts,
 	vector<wstring>& nodesToUpdateDescriptions,
 	size_t& numParameters,
-	bool useMixedPrecisionTraining, 
+	bool useMixedPrecisionTraining,
 	DEVICEID_TYPE deviceId)
 {
 	// Note: We don't actually need the smoothedGradients if !IsParameterUpdateRequired().
@@ -227,21 +227,10 @@ static void InitializeSmoothedGradient(
 	size_t numCols = node->Value().GetNumCols();
 
 	if (useMixedPrecisionTraining && std::is_same<NodeElemType, half>()) // ElemType == half
-	{
-		// In Mixed precision training, the final gradients should be FP32, so as to smoothedGradient
-		const size_t smoothedGradientSpaceFactor = 3; // we need 3x space for (origin smoothed gradient/FP32 gradient buffer/FP32 master weight)
-		auto compoundMatrixPtr = std::make_shared<Matrix<float>>(numRows, numCols * smoothedGradientSpaceFactor, deviceId);
-
-		// initialize master weight(FP32) with FP16 weight
-		auto masterWeightMatrix = compoundMatrixPtr->ColumnSlice((smoothedGradientSpaceFactor - 1)*numCols, numCols);
-		masterWeightMatrix.CastAssignValuesOf(node->Value());
-
-		smoothedGradientPtr = compoundMatrixPtr;
-	}
+		smoothedGradientPtr = std::make_shared<Matrix<float>>(numRows, numCols, deviceId);
 	else
-	{
 		smoothedGradientPtr = std::make_shared<Matrix<NodeElemType>>(numRows, numCols, deviceId);
-	}
+
 	smoothedGradients.push_back(smoothedGradientPtr);
 
 	smoothedCounts.push_back(0);
@@ -251,7 +240,6 @@ static void InitializeSmoothedGradient(
 		numParameters += node->GetSampleLayout().GetNumElements();
 	}
 }
-
 
 template <class ElemType>
 void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
@@ -416,7 +404,22 @@ void SGD<ElemType>::TrainOrAdaptModel(int startEpoch, ComputationNetworkPtr net,
 		else if (nodeDouble)
 			InitializeSmoothedGradient<double>(nodeDouble, smoothedGradients, smoothedCounts, nodesToUpdateDescriptions, numParameters, useMixedPrecisionTraining, net->GetDeviceId());
 		else if (nodeHalf)
+		{
 			InitializeSmoothedGradient<half>(nodeHalf, smoothedGradients, smoothedCounts, nodesToUpdateDescriptions, numParameters, useMixedPrecisionTraining, net->GetDeviceId());
+			
+			std::wstring name = nodeHalf->NodeName();
+			if (m_masterWeights.find(name) != m_masterWeights.end())
+				RuntimeError("Find multiple node with same name: \"%ls\"", name.c_str());
+			
+			auto numRows = nodeHalf->Value().GetNumRows();
+			auto numCols = nodeHalf->Value().GetNumCols();
+			auto deviceId = net->GetDeviceId();
+
+			auto currMasterWeight = std::make_shared<Matrix<float>>(numRows, numCols, deviceId);
+			currMasterWeight->CastAssignValuesOf(nodeHalf->Value());
+			m_masterWeights[name] = currMasterWeight;
+			m_FP32GradBuffer[name] = std::make_shared<Matrix<float>>(numRows, numCols, deviceId);
+		}
 		else
 			LogicError("Type is not supported.");
     }
@@ -2804,19 +2807,21 @@ void SGD<ElemType>::MixedUpdateWeights(shared_ptr<ComputationNode<half>> learnab
 									   const int epochNumber,
 									   size_t numSamplesInMinibatch)
 {
-	auto compoundMatrixPtr = dynamic_pointer_cast<Matrix<float>>(smoothedGradient);
-	if (!compoundMatrixPtr)
+	auto smoothedGradientPtr = dynamic_pointer_cast<Matrix<float>>(smoothedGradient);
+	if (!smoothedGradientPtr)
 		RuntimeError("smoothedGradient cast error: type not matched.");
 
-	size_t numCols = learnableNode->Value().GetNumCols();
-	auto smoothedGradientMatrix = compoundMatrixPtr->ColumnSlice(0, numCols);
-	auto tempFP32GradMatrix = compoundMatrixPtr->ColumnSlice(numCols, numCols);
-	auto masterWeightMatrix = compoundMatrixPtr->ColumnSlice(2 * numCols, numCols);
+	auto name = learnableNode->NodeName();
+	if (m_masterWeights.find(name) == m_masterWeights.end())
+		RuntimeError("Cannot find node \"%ls\" for weight update", name.c_str());
+
+	auto masterWeight = m_masterWeights[name];
+	auto FP32GradBuffer = m_FP32GradBuffer[name];
 
 	if (learnableNode->IsParameterUpdateRequired())
 	{
 #ifdef _DEBUG
-		if (smoothedGradientMatrix.HasNan("TrainOneEpoch/MixedUpdateWeights(): "))
+		if (smoothedGradientPtr->HasNan("TrainOneEpoch/MixedUpdateWeights(): "))
 			LogicError("%ls %ls operation has NaNs in smoothedGradient.", learnableNode->NodeName().c_str(), learnableNode->OperationName().c_str());
 #endif
 		double nodeDependentLearningRatePerSample = learnRatePerSample * learnableNode->GetLearningRateMultiplier();
@@ -2826,20 +2831,20 @@ void SGD<ElemType>::MixedUpdateWeights(shared_ptr<ComputationNode<half>> learnab
 		// BUGBUG (Issue #95): Access to net MBLayout can no longer be done if we have multiple input layouts
 
 		// Gradient: FP16 -> FP32
-		tempFP32GradMatrix.CastAssignValuesOf(learnableNode->Gradient());
+		FP32GradBuffer->CastAssignValuesOf(learnableNode->Gradient());
 
 		// Do Loss Unscaling
-		tempFP32GradMatrix.Scale(1.0f / (m_mixedTrainLossScaleFactor + 1e-9f), tempFP32GradMatrix);
+		FP32GradBuffer->Scale(1.0f / (m_mixedTrainLossScaleFactor + 1e-9f), *FP32GradBuffer);
 
-		UpdateWeightsImpl<float>(masterWeightMatrix, tempFP32GradMatrix,
-			smoothedGradientMatrix, smoothedCount,
+		UpdateWeightsImpl<float>(*masterWeight, *FP32GradBuffer,
+			*smoothedGradientPtr, smoothedCount,
 			nodeDependentLearningRatePerSample, momentumPerSample,
 			numSamplesInMinibatch,
 			m_L2RegWeight * nodeDependentRegMultiplier, m_L1RegWeight * nodeDependentRegMultiplier,
 			m_needAveMultiplier, m_useNesterovMomentum, m_disableMomentumUnitGain);
 
 		// Weight Value: FP32 -> FP16
-		learnableNode->Value().CastAssignValuesOf(masterWeightMatrix);
+		learnableNode->Value().CastAssignValuesOf(*masterWeight);
 			
 		learnableNode->BumpEvalTimeStamp();
 #ifdef _DEBUG
@@ -2872,24 +2877,25 @@ void SGD<ElemType>::ClipGradient(Matrix<ActualElemType>& gradient, const size_t 
     }
 }
 
+
 template <class ElemType>
-static void SaveSmoothedGradient(File& fstream, MatrixBasePtr& smoothedGradientPtr)
+static void SaveTypedMatrix(File& fstream, MatrixBasePtr& matrix)
 {
-	auto typedSmoothedGradPtr = dynamic_pointer_cast<Matrix<ElemType>> (smoothedGradientPtr);
-	if (!typedSmoothedGradPtr)
-		RuntimeError("Failed to cast, type mismatch");
-	const Matrix<ElemType>& smoothedGradientValue = *typedSmoothedGradPtr;
-	fstream << smoothedGradientValue;
+	auto typedMatrixPtr = dynamic_pointer_cast<Matrix<ElemType>> (matrix);
+	if (!typedMatrixPtr)
+		RuntimeError("Failed to cast, type mismatch.");
+	
+	fstream << *typedMatrixPtr;
 }
 
 template <class ElemType>
-static void LoadSmoothedGradient(File& fstream, MatrixBasePtr& smoothedGradientPtr)
+static void LoadTypedMatrix(File& fstream, MatrixBasePtr& matrix)
 {
-	auto typedSmoothedGradPtr = dynamic_pointer_cast<Matrix<ElemType>> (smoothedGradientPtr);
-	if (!typedSmoothedGradPtr)
+	auto typedMatrixPtr = dynamic_pointer_cast<Matrix<ElemType>> (matrix);
+	if (!typedMatrixPtr)
 		RuntimeError("File to cast, type mismatch");
-	Matrix<ElemType>& smoothedGradientValue = *typedSmoothedGradPtr;
-	fstream >> smoothedGradientValue;
+	
+	fstream >> *typedMatrixPtr;
 }
 
 template <class ElemType>
@@ -2932,9 +2938,9 @@ void SGD<ElemType>::SaveCheckPointInfo(const size_t epoch, const size_t totalSam
             for (auto smoothedGradientPtr : smoothedGradients)
             {
 				if (UseMixedPrecisionTraining())
-					SaveSmoothedGradient<float>(fstream, smoothedGradientPtr);
+					SaveTypedMatrix<float>(fstream, smoothedGradientPtr);
 				else
-					SaveSmoothedGradient<ElemType>(fstream, smoothedGradientPtr);
+					SaveTypedMatrix<ElemType>(fstream, smoothedGradientPtr);
             }
 
             fstream.PutMarker(FileMarker::fileMarkerEndSection, L"EGradient");
@@ -2945,6 +2951,18 @@ void SGD<ElemType>::SaveCheckPointInfo(const size_t epoch, const size_t totalSam
                 fstream << sc;
 
             fstream.PutMarker(FileMarker::fileMarkerEndSection, L"ECount");
+
+			// master weight
+			if (UseMixedPrecisionTraining())
+			{
+				fstream.PutMarker(FileMarker::fileMarkerBeginSection, L"BMasterWeight");
+				const int32_t learnableNodeNum = static_cast<int32_t>(m_masterWeights.size());
+				fstream << learnableNodeNum;
+
+				for (const auto& masterWeight : m_masterWeights)
+					fstream << *(masterWeight.second);
+				fstream.PutMarker(FileMarker::fileMarkerEndSection, L"EMasterWeight");
+			}
 
             if (m_saveBestModelPerCriterion)
             {
@@ -3043,9 +3061,9 @@ void SGD<ElemType>::LoadCheckPointInfo(const size_t epochNumber,
     for (auto smoothedGradientPtr : smoothedGradients)
     {
 		if (UseMixedPrecisionTraining())
-			LoadSmoothedGradient<float>(fstream, smoothedGradientPtr);
+			LoadTypedMatrix<float>(fstream, smoothedGradientPtr);
 		else
-			LoadSmoothedGradient<ElemType>(fstream, smoothedGradientPtr);
+			LoadTypedMatrix<ElemType>(fstream, smoothedGradientPtr);
     }
     fstream.GetMarker(FileMarker::fileMarkerEndSection, L"EGradient");
 
@@ -3057,6 +3075,24 @@ void SGD<ElemType>::LoadCheckPointInfo(const size_t epochNumber,
     }
     else // deal with legacy checkpoints
         std::fill(smoothedCounts.begin(), smoothedCounts.end(), static_cast<double>(minibatchSize));
+
+	// master weight
+	if (UseMixedPrecisionTraining())
+	{
+		if (fstream.TryGetMarker(FileMarker::fileMarkerBeginSection, L"BMasterWeight"))
+		{
+			int32_t learnableNodeNum = 0;
+			fstream >> learnableNodeNum;
+			if (learnableNodeNum != static_cast<int32_t>(m_masterWeights.size()))
+				RuntimeError("Learnable node number mismatch: checkpoint size %d but actual size %d", learnableNodeNum, static_cast<int32_t>(m_masterWeights.size()));
+
+			for (auto& masterWeight : m_masterWeights)
+				fstream >> *(masterWeight.second);
+			fstream.GetMarker(FileMarker::fileMarkerEndSection, L"EMasterWeight");
+		}
+		else
+			RuntimeError("Cannot find stored master weight in this checkpoint file.");
+	}
 
     if (fstream.TryGetMarker(FileMarker::fileMarkerBeginSection, L"BCriteria"))
     {
@@ -3072,7 +3108,7 @@ void SGD<ElemType>::LoadCheckPointInfo(const size_t epochNumber,
         }
         for (auto& criterion : m_criteriaBestEpoch)
             fstream >> criterion.second.criterionMinValue >> criterion.second.epochIndex;
-        fstream.GetMarker(FileMarker::fileMarkerBeginSection, L"ECriteria");
+        fstream.GetMarker(FileMarker::fileMarkerEndSection, L"ECriteria");
     }
 
     fstream.GetMarker(FileMarker::fileMarkerEndSection, L"ECKP");
