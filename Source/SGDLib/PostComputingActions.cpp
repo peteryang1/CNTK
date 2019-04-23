@@ -116,6 +116,7 @@ void PostComputingActions<ElemType>::BatchNormalizationStatistics(IDataReader * 
 
             // push the statistics results of mean and variance of bn nodes into mpi updating vector
             std::vector<Matrix<ElemType>*> learnParamsValues(2, nullptr);
+			std::vector<TypedMatrixPtr> typedLearnParamsValues;
 
             SimpleDistGradAggregator<ElemType> distGradAgg(m_mpi, false /*useAsyncAggregation*/, m_net->GetDeviceId(), 0 /*syncStatsTrace*/);
 
@@ -124,18 +125,44 @@ void PostComputingActions<ElemType>::BatchNormalizationStatistics(IDataReader * 
 
             shared_ptr<ComputationNode<ElemType>> runMeanNode = static_pointer_cast<ComputationNode<ElemType>>(runMeanParameterPtr);
             shared_ptr<ComputationNode<ElemType>> runStdNode  = static_pointer_cast<ComputationNode<ElemType>>(runStdParameterPtr);
-
-            learnParamsValues[0] = &(runMeanNode->Value());
-            learnParamsValues[1] = &(runStdNode->Value());
-
             m_gradHeader->numSamples = actualMBSize ? 1 : actualMBSize;
-            distGradAgg.AggregateGradients(learnParamsValues, m_gradHeader.get(), 0);
 
-            // get the average mean and variance across all the workers
-            for (auto& parameter : learnParamsValues)
-            {
-                (*parameter) /= (ElemType)m_mpi->NumNodesInUse();
-            }
+			if (std::is_same<ElemType, half>::value)
+			{
+				typedLearnParamsValues.emplace_back(MatrixBasePtr(&(runMeanNode->Value())));
+				typedLearnParamsValues.emplace_back(MatrixBasePtr(&(runStdNode->Value())));
+				distGradAgg.AggregateGradients(typedLearnParamsValues, m_gradHeader.get(), 0);
+
+				for (const auto& parameter : typedLearnParamsValues)
+				{
+					switch (parameter.GetType())
+					{
+					case MatrixElemType::FLOAT:
+						*(parameter.GetFloatMatrixPtr()) /= (float)m_mpi->NumNodesInUse();
+						break;
+					case MatrixElemType::DOUBLE:
+						*(parameter.GetDoubleMatrixPtr()) /= (double)m_mpi->NumNodesInUse();
+						break;
+					case MatrixElemType::HALF:
+						*(parameter.GetHalfMatrixPtr()) /= (half)m_mpi->NumNodesInUse();
+						break;
+					default:
+						RuntimeError("Type is not supported.");
+					}
+				}
+			}
+			else
+			{
+				learnParamsValues[0] = &(runMeanNode->Value());
+				learnParamsValues[1] = &(runStdNode->Value());
+				distGradAgg.AggregateGradients(learnParamsValues, m_gradHeader.get(), 0);
+				
+				// get the average mean and variance across all the workers
+				for (auto& parameter : learnParamsValues)
+				{
+					(*parameter) /= (ElemType)m_mpi->NumNodesInUse();
+				}
+			}
         }
     }
 

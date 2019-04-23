@@ -99,6 +99,7 @@ public:
         m_net->StartEvaluateMinibatchLoop(evalNodes);
 
         std::vector<Matrix<ElemType>*> learnParamsGradients;
+		std::vector<TypedMatrixPtr> typedLearnParamsGradients;
         DataReaderHelpers::SubminibatchDispatcher<ElemType> smbDispatcher;
         size_t numSubminibatchesNeeded = DataReaderHelpers::GetNumSubminibatchesNeeded<ElemType>(dataReader, m_maxSamplesInRAM, m_numSubminiBatches, mbSize);
 
@@ -179,7 +180,12 @@ public:
                 // TODO: We are reusing the aggregation logic inside SimpleDistGradAggregator, which has a heavy dependency
                 // on the gradient matrix. At some point we should refactor the aggregator class to be able to only calculating
                 // eval results and then remove this hack.
-                if (learnParamsGradients.size() == 0)
+				if (std::is_same<ElemType, half>::value && typedLearnParamsGradients.empty())
+				{
+					auto matrix = std::make_shared<Matrix<ElemType>>((DEVICEID_TYPE)m_net->GetDeviceId());
+					typedLearnParamsGradients.push_back(TypedMatrixPtr(matrix));
+				}
+                else if (learnParamsGradients.empty())
                 {
                     Matrix<ElemType>* matrix = new Matrix<ElemType>((DEVICEID_TYPE)m_net->GetDeviceId());
                     learnParamsGradients.push_back(matrix);
@@ -187,7 +193,11 @@ public:
 
                 // Using SimpleDistAggregator for eval results only. At some point we should rename the class to be just
                 // IDistAggregator and SimpleDistAggregator.
-                bool samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), /*resetState =*/ false);
+				bool samplesProcessed;
+				if (std::is_same<ElemType, half>::value)
+					samplesProcessed = m_distGradAgg->AggregateGradients(typedLearnParamsGradients, m_gradHeader.get(), /*resetState =*/ false);
+				else
+					samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), /*resetState =*/ false);
                 noMoreSamplesToProcess = !samplesProcessed;
 
                 aggregateNumSamplesWithLabel = m_gradHeader->numSamplesWithLabel;

@@ -34,6 +34,7 @@ void AggregateAccumulatorValuesAndUpdateEvaluation(
     // so we transfer sum instead of mean, and calculate mean after aggregation is finished.
     auto allEpochAccumulatorNodes = net->GetNodesWithType(OperationNameOf(EpochAccumulatorNode));
     std::vector<Matrix<ElemType>*> accumulatorValues;
+	std::vector<TypedMatrixPtr> typedAccumulatorValues;
     size_t sampleCount =
         dynamic_pointer_cast<EpochAccumulatorNode<ElemType>>(allEpochAccumulatorNodes.front())->GetNumberOfSamples();
     // Calculate accumulator sums.
@@ -43,7 +44,10 @@ void AggregateAccumulatorValuesAndUpdateEvaluation(
         assert(sampleCount == node->GetNumberOfSamples());
         Matrix<ElemType>& accumulator = *node->GetAccumulator();
         accumulator *= (ElemType) sampleCount;
-        accumulatorValues.emplace_back(&accumulator);
+		if (std::is_same<ElemType, half>::value)
+			typedAccumulatorValues.emplace_back(MatrixBasePtr(&accumulator));
+		else
+			accumulatorValues.emplace_back(&accumulator);
     }
 
     // Prepare aggregator.
@@ -68,13 +72,41 @@ void AggregateAccumulatorValuesAndUpdateEvaluation(
         gradHeader->evalErrors[i] = std::make_pair<double, size_t>(0.0, 0);
 
     // Aggregate accumulator sums.
-    bool samplesProcessed = distGradAgg->AggregateGradients(accumulatorValues, gradHeader.get(), /*resetState =*/false);
+	bool samplesProcessed;
+	if (std::is_same<ElemType, half>::value)
+		samplesProcessed = distGradAgg->AggregateGradients(typedAccumulatorValues, gradHeader.get(), /*resetState =*/false);
+    else
+		samplesProcessed = distGradAgg->AggregateGradients(accumulatorValues, gradHeader.get(), /*resetState =*/false);
     if (!samplesProcessed)
         RuntimeError("Couldn't aggregate accumulator values.");
 
     // Accumulators should contain mean values. We calculated them based on aggregated sums and number of samples.
-    for (Matrix<ElemType>* acc : accumulatorValues)
-        (*acc) /= (ElemType) gradHeader->numSamples;
+
+	if (std::is_same<ElemType, half>::value)
+	{
+		for (const auto& matrixPtr : typedAccumulatorValues)
+		{
+			switch (matrixPtr.GetType())
+			{
+			case MatrixElemType::FLOAT:
+				*(matrixPtr.GetFloatMatrixPtr()) /= (float)gradHeader->numSamples;
+				break;
+			case MatrixElemType::HALF:
+				*(matrixPtr.GetHalfMatrixPtr()) /= (half)gradHeader->numSamples;
+				break;
+			case MatrixElemType::DOUBLE:
+				*(matrixPtr.GetDoubleMatrixPtr()) /= (double)gradHeader->numSamples;
+				break;
+			default:
+				RuntimeError("Type is not supported");
+			}
+		}
+	}
+	else
+	{
+		for (Matrix<ElemType>* acc : accumulatorValues)
+			(*acc) /= (ElemType) gradHeader->numSamples;
+	}
 
     // Update output values of accumulator nodes.
     for (auto& accumulatorNode : allEpochAccumulatorNodes)
