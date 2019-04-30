@@ -111,7 +111,7 @@ public:
         }
         CUDNN_CALL(cudnnSetConvolutionNdDescriptor(m_conv, (int)dim_size, pad.data(),
                                                    stride.data(), dilation.data(),
-                                                   CUDNN_CROSS_CORRELATION, dataType == CUDNN_DATA_HALF ? CUDNN_DATA_FLOAT : dataType));
+                                                   CUDNN_CROSS_CORRELATION, dataType));
         // allow tensor core for fp16 by default
         if(dataType == CUDNN_DATA_HALF)
             CUDNN_CALL(cudnnSetConvolutionMathType(m_conv, CUDNN_TENSOR_OP_MATH));
@@ -299,7 +299,7 @@ protected:
         {
             auto result = finder(calgo, algoPerf);
             auto found = std::find_if(algoPerf, algoPerf + calgo,
-                [](const cudnnConvolutionFwdAlgoPerf_t& a) { return a.algo == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM && a.status == CUDNN_STATUS_SUCCESS; });
+                [](const cudnnConvolutionFwdAlgoPerf_t& a) { return a.algo == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM && a.status == CUDNN_STATUS_SUCCESS; });
             if (found == algoPerf + calgo)
                 RuntimeError("cuDNN could not find a deterministic algorithm. Set 'forceDeterministicAlgorithms=false' in your configuration.");
             algoPerf[0] = *found;   // copy the deterministic algorithm to first entry
@@ -318,7 +318,7 @@ protected:
                 {
                     if (m_fwdAlgo.MaxAlgoWorkspaceSize < tmpSize)
                         m_fwdAlgo.MaxAlgoWorkspaceSize = tmpSize;
-                    if ((cudnnConvolutionFwdAlgo_t)i == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM)
+                    if ((cudnnConvolutionFwdAlgo_t)i == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM)
                         m_fwdAlgo.DeterministicAlgoWorkspaceSize = tmpSize;
                     err = err0;
                 }
