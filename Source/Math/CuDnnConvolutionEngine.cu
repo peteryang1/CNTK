@@ -11,6 +11,8 @@
 #include <typeindex>
 #include "CuDnnCommon.h"
 #include "half.hpp"
+#include "Globals.h"
+#include <ctime>
 
 // We want tensor core be enabled in order to get(v7)/find tensor core results. But if algo without tensorcore is faster, the only way to force faster algo is to turn it off. Since re-tuning can happen quite often in CNTK, it gets bad if we don't do it carefully. It also require move to get_v7 and we can't test until we can run fp16.
 // For now, let's keep it simple and enable tensor core all the time for fp16.
@@ -89,7 +91,7 @@ private:
 class CuDnnConv
 {
 public:
-    CuDnnConv(const ConvolveGeometry& geometry, cudnnDataType_t dataType)
+    CuDnnConv(const ConvolveGeometry& geometry, cudnnDataType_t dataType, bool forceTrueHalf = false)
         : m_conv(nullptr)
     {
         CUDNN_CALL(cudnnCreateConvolutionDescriptor(&m_conv));
@@ -109,9 +111,11 @@ public:
             pad[dim_size - 1 - i] = geometry.GetLowerPad(i);
             dilation[dim_size - 1 - i] = (int)geometry.GetDilation(i);
         }
+
+		cudnnDataType_t convMathDataType = (!forceTrueHalf && dataType == CUDNN_DATA_HALF) ? CUDNN_DATA_FLOAT : dataType;
         CUDNN_CALL(cudnnSetConvolutionNdDescriptor(m_conv, (int)dim_size, pad.data(),
                                                    stride.data(), dilation.data(),
-                                                   CUDNN_CROSS_CORRELATION, dataType));
+                                                   CUDNN_CROSS_CORRELATION, convMathDataType));
         // allow tensor core for fp16 by default
         if(dataType == CUDNN_DATA_HALF)
             CUDNN_CALL(cudnnSetConvolutionMathType(m_conv, CUDNN_TENSOR_OP_MATH));
@@ -226,13 +230,21 @@ public:
 public:
     CuDnnConvolutionEngine(ConvolveGeometryPtr geometry, DEVICEID_TYPE deviceId, ImageLayoutKind imageLayout,
                            size_t maxTempMemSizeInSamples, PoolKind poolKind, bool forceDeterministicAlgorithms,
-                           bool poolIncludePad, bool inputHasFreeDimension)
+                           bool poolIncludePad, bool inputHasFreeDimension, bool forceTrueHalf)
         : Base(geometry, deviceId, imageLayout, maxTempMemSizeInSamples, poolKind, poolIncludePad),
           m_cudnn(CuDnn::Instance()),
           m_dataType(CuDnnTensor::GetDataType<ElemType>()),
           m_forceDeterministicAlgorithms(forceDeterministicAlgorithms),
-          m_inputHasFreeDimension(inputHasFreeDimension)
+          m_inputHasFreeDimension(inputHasFreeDimension),
+		  m_forceTrueHalf(forceTrueHalf)
     {
+		// In TRUE_HALF_CONFIG:
+		// Use CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM for forward
+		// Use CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1 for backward_filter
+		// Use CUDNN_CONVOLUTION_BWD_DATA_ALGO_1 for backward_data
+		if (m_forceTrueHalf)
+			m_forceDeterministicAlgorithms = true;
+
         auto inShape = geometry->InputShape();
         auto outShape = geometry->OutputShape();
 
@@ -275,7 +287,7 @@ protected:
         if (m_kernelT == nullptr)
         {
             m_kernelT = std::make_unique<CuDnnKernel>(*m_geometry, m_dataType);
-            m_conv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType);
+            m_conv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType, m_forceTrueHalf);
         }
     }
 
@@ -356,9 +368,12 @@ protected:
             forwardAlgo.insert(m_fwdAlgo.selectedAlgo);
         }
 #endif
-
-
+		time_t convForwardStart, convForwardEnd;
+		time(&convForwardStart);
         CUDNN_CALL(cudnnConvolutionForward(*m_cudnn, &C::One, m_inT, ptr(in), *m_kernelT, ptr(kernel), *m_conv, m_fwdAlgo.selectedAlgo, ptr(workspace), workspace.BufferSize(), &C::Zero, m_outT, ptr(out)));
+		time(&convForwardEnd);
+		float seconds = static_cast<float>(difftime(convForwardEnd, convForwardStart));
+		printf("\n================\nCuDNN Conv Forward time: %f\n================\n\n", seconds);
     }
 
     void BackwardDataCore(const Mat& srcGrad, const Mat& kernel, Mat& grad, bool accumulateGradient, Mat& workspace) override
@@ -798,6 +813,7 @@ private:
     // Flag indicating whether only deterministic algorithms should be used.
     bool m_forceDeterministicAlgorithms;
     bool m_inputHasFreeDimension;
+	bool m_forceTrueHalf;
 };
 
 template <class ElemType>
@@ -805,10 +821,10 @@ std::unique_ptr<ConvolutionEngine<ElemType>> CuDnnConvolutionEngineFactory<ElemT
                                                                                              DEVICEID_TYPE deviceId, ImageLayoutKind imageLayout,
                                                                                              size_t maxTempMemSizeInSamples, PoolKind poolKind,
                                                                                              bool forceDeterministicAlgorithms, bool poolIncludePad,
-                                                                                             bool inputHasFreeDimension)
+                                                                                             bool inputHasFreeDimension, bool forceTrueHalf)
 {
     return std::make_unique<CuDnnConvolutionEngine<ElemType>>(geometry, deviceId, imageLayout, maxTempMemSizeInSamples, poolKind,
-                                                              forceDeterministicAlgorithms, poolIncludePad, inputHasFreeDimension);
+                                                              forceDeterministicAlgorithms, poolIncludePad, inputHasFreeDimension, forceTrueHalf);
 }
 
 template <class ElemType>

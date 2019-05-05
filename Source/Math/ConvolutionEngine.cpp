@@ -1156,7 +1156,7 @@ std::unique_ptr<ConvolutionEngine<ElemType>> ConvolutionEngine<ElemType>::Create
                                                                                  ImageLayoutKind imageLayout, size_t maxTempMemSizeInSamples, PoolKind poolKind,
                                                                                  ConvolutionEngineKind enabledEngines, std::wstring logPrefix,
                                                                                  bool forceDeterministicAlgorithms, bool poolIncludePad,
-                                                                                 bool inputHasFreeDimension)
+                                                                                 bool inputHasFreeDimension, bool forceTrueHalf)
 {
     if (!logPrefix.empty())
         logPrefix += L": ";
@@ -1186,7 +1186,7 @@ std::unique_ptr<ConvolutionEngine<ElemType>> ConvolutionEngine<ElemType>::Create
             fprintf(stderr, "%lsusing cuDNN convolution engine for geometry: %s.\n", logPrefix.c_str(), engStr.c_str());
 
         return CuDnnConvolutionEngineFactory<ElemType>::Create(geometry, deviceId, imageLayout, maxTempMemSizeInSamples, poolKind,
-                                                               forceDeterministicAlgorithms, poolIncludePad, inputHasFreeDimension);
+                                                               forceDeterministicAlgorithms, poolIncludePad, inputHasFreeDimension, forceTrueHalf);
     }
 
     if (geometry->Groups() == 1)
@@ -1237,7 +1237,7 @@ std::unique_ptr<ConvolutionEngine<half>> ConvolutionEngine<half>::Create(Convolv
     ImageLayoutKind imageLayout, size_t maxTempMemSizeInSamples, PoolKind poolKind,
     ConvolutionEngineKind enabledEngines, std::wstring logPrefix,
     bool forceDeterministicAlgorithms, bool poolIncludePad,
-    bool inputHasFreeDimension)
+    bool inputHasFreeDimension, bool forceTrueHalf)
 {
     if (!logPrefix.empty())
         logPrefix += L": ";
@@ -1256,7 +1256,7 @@ std::unique_ptr<ConvolutionEngine<half>> ConvolutionEngine<half>::Create(Convolv
             fprintf(stderr, "%lsusing cuDNN convolution engine for geometry: %s.\n", logPrefix.c_str(), engStr.c_str());
 
         return CuDnnConvolutionEngineFactory<half>::Create(geometry, deviceId, imageLayout, maxTempMemSizeInSamples, poolKind,
-            forceDeterministicAlgorithms, poolIncludePad, inputHasFreeDimension);
+            forceDeterministicAlgorithms, poolIncludePad, inputHasFreeDimension, forceTrueHalf);
     }
 
     RuntimeError("FP16 convolution is only supported via cuDNN.");

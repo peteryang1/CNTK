@@ -17,7 +17,7 @@ public:
     static std::unique_ptr<ConvolutionEngine<ElemType>> Create(ConvolveGeometryPtr geometry, DEVICEID_TYPE deviceId,
                                                                ImageLayoutKind imageLayout, size_t maxTempMemSizeInSamples,
                                                                PoolKind poolKind, bool forceDeterministicAlgorithms, 
-                                                               bool poolIncludePad, bool inputHasFreeDimension);
+                                                               bool poolIncludePad, bool inputHasFreeDimension, bool forceTrueHalf);
     static bool IsSupported(DEVICEID_TYPE deviceId, ConvolveGeometryPtr geometry, PoolKind poolKind);
 };
 

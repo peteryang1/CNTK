@@ -328,9 +328,9 @@ public:
     ConvolutionNodeBaseExtended(DEVICEID_TYPE deviceId, const wstring& name, const TensorShape& kernelShape, const TensorShape& mapCount, const TensorShape& strideShape,
         const std::vector<bool>& sharing, const std::vector<bool>& autoPadding, const TensorShape& lowerPad, const TensorShape& upperPad,
         bool transpose, const TensorShape &outputShape, ImageLayoutKind imageLayout, size_t maxTempMemSizeInSamples, const TensorShape& dilation = TensorShape(1),
-        size_t groups = 1)
+        size_t groups = 1, bool forceTrueHalf = false)
         : Base(deviceId, name, kernelShape, mapCount, strideShape, sharing, autoPadding, lowerPad, upperPad, PoolKind::None, false, transpose, outputShape, false, imageLayout, maxTempMemSizeInSamples),
-        m_convolution2D(false), m_dilation(dilation), m_groups(groups)
+        m_convolution2D(false), m_dilation(dilation), m_groups(groups), m_forceTrueHalf(forceTrueHalf)
     {
         // Make sure not using dilation on CPU
         if (deviceId < 0)
@@ -351,11 +351,12 @@ public:
             false, TensorShape(0), imageLayout, maxTempMemSizeInSamples)
     {
         m_convolution2D = true;
+		m_forceTrueHalf = false;
     }
     ConvolutionNodeBaseExtended(const ScriptableObjects::IConfigRecordPtr configp)
         : ConvolutionNodeBaseExtended(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"kernelShape"), configp->Get(L"mapCount"), configp->Get(L"strideShape"),
             configp->Get(L"dimSharing"), configp->Get(L"dimPadding"), configp->Get(L"dimPadLower"), configp->Get(L"dimPadUpper"),
-            configp->Get(L"transpose"), configp->Get(L"dimOutputShape"), ImageLayoutKindFrom(configp->Get(L"imageLayout")), configp->Get(L"maxTempMemSizeInSamples"), configp->Get(L"dimDilation"), (*configp)(L"groups", 1))
+            configp->Get(L"transpose"), configp->Get(L"dimOutputShape"), ImageLayoutKindFrom(configp->Get(L"imageLayout")), configp->Get(L"maxTempMemSizeInSamples"), configp->Get(L"dimDilation"), (*configp)(L"groups", 1), (*configp)(L"forceTrueHalf", false))
     {
         AttachInputsFromConfig(configp, GetExpectedNumInputs());
     }
@@ -461,6 +462,7 @@ protected:
     size_t m_groups;
     // Flag that indicates whether the node is created using 2D-syntax.
     bool m_convolution2D;
+	bool m_forceTrueHalf;
 };
 
 #define UsingConvolutionBaseNodeMembers     \
@@ -688,7 +690,7 @@ public:
                 m_convEng = ConvolutionEngine<ElemType>::Create(geometry, m_deviceId, m_imageLayout,
                                                                 m_maxTempMemSizeInSamples, m_poolKind,
                                                                 ConvolutionEngineKind::All, NodeName(), Globals::ShouldForceDeterministicAlgorithms(),
-                                                                false, recomputeConvGeometry);
+                                                                false, recomputeConvGeometry, m_forceTrueHalf);
             }
 
             if (Input(0)->GetSampleLayout().GetNumElements() != m_kernelShape.GetNumElements() * m_convEng->Geometry()->KernelCount())

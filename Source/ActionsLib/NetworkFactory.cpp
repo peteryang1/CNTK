@@ -40,6 +40,7 @@ bool TryGetNetworkFactory(const ConfigRecordType& config, function<ComputationNe
     DEVICEID_TYPE deviceId = DeviceFromConfig(config);
 
     int traceLevel = config(L"traceLevel", 0);
+	bool forceTrueHalf = config(L"forceTrueHalf", false);
     if (config.Exists(L"createNetwork"))
     {
         createNetworkFn = GetCreateNetworkFn(config); // (we need a separate function needed due to template code)
@@ -94,8 +95,9 @@ bool TryGetNetworkFactory(const ConfigRecordType& config, function<ComputationNe
             L"deviceId = %d\n"            // deviceId as passed in
             L"traceLevel = %d\n"
             L"precision = '%ls'\n"        // 'float' or 'double'
-            L"network = %ls",             // source code of expression that evaluates to a ComputationNetwork
-            (int)deviceId, traceLevel, ElemTypeName<ElemType>(), sourceOfNetwork.c_str());
+            L"network = %ls"              // source code of expression that evaluates to a ComputationNetwork
+			L"forceTrueHalf = %ls",
+            (int)deviceId, traceLevel, ElemTypeName<ElemType>(), sourceOfNetwork.c_str(), (forceTrueHalf ? L"true" : L"false"));
         let expr = BS::ParseConfigDictFromString(sourceOfBS, L"BrainScriptNetworkBuilder", move(includePaths));
 
         // the rest is done in a lambda that is only evaluated when a virgin network is needed

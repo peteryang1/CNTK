@@ -63,7 +63,7 @@ public:
                                                                ImageLayoutKind imageLayout, size_t maxTempMemSizeInSamples, PoolKind poolKind = PoolKind::None,
                                                                ConvolutionEngineKind enabledEngines = ConvolutionEngineKind::All,
                                                                std::wstring logPrefix = L"", bool forceDeterministicAlgorithms = false,
-                                                               bool poolIncludePad = false, bool inputHasFreeDimension = false);
+                                                               bool poolIncludePad = false, bool inputHasFreeDimension = false, bool forceTrueHalf = false);
 
     DISABLE_COPY_AND_MOVE(ConvolutionEngine);
 
