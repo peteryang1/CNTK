@@ -471,6 +471,7 @@ protected:                                  \
     using Base::m_dilation;                 \
     using Base::m_groups;                   \
     using Base::m_convolution2D;            \
+	using Base::m_forceTrueHalf;			\
 public:
 
 // -----------------------------------------------------------------------
