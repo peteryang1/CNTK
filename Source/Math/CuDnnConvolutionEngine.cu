@@ -12,7 +12,6 @@
 #include "CuDnnCommon.h"
 #include "half.hpp"
 #include "Globals.h"
-#include <ctime>
 
 // We want tensor core be enabled in order to get(v7)/find tensor core results. But if algo without tensorcore is faster, the only way to force faster algo is to turn it off. Since re-tuning can happen quite often in CNTK, it gets bad if we don't do it carefully. It also require move to get_v7 and we can't test until we can run fp16.
 // For now, let's keep it simple and enable tensor core all the time for fp16.
@@ -368,12 +367,8 @@ protected:
             forwardAlgo.insert(m_fwdAlgo.selectedAlgo);
         }
 #endif
-		time_t convForwardStart, convForwardEnd;
-		time(&convForwardStart);
+
         CUDNN_CALL(cudnnConvolutionForward(*m_cudnn, &C::One, m_inT, ptr(in), *m_kernelT, ptr(kernel), *m_conv, m_fwdAlgo.selectedAlgo, ptr(workspace), workspace.BufferSize(), &C::Zero, m_outT, ptr(out)));
-		time(&convForwardEnd);
-		float seconds = static_cast<float>(difftime(convForwardEnd, convForwardStart));
-		printf("\n================\nCuDNN Conv Forward time: %f\n================\n\n", seconds);
     }
 
     void BackwardDataCore(const Mat& srcGrad, const Mat& kernel, Mat& grad, bool accumulateGradient, Mat& workspace) override
