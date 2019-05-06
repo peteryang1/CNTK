@@ -12,6 +12,7 @@
 #include "CuDnnCommon.h"
 #include "half.hpp"
 #include "Globals.h"
+#include <string>
 
 // We want tensor core be enabled in order to get(v7)/find tensor core results. But if algo without tensorcore is faster, the only way to force faster algo is to turn it off. Since re-tuning can happen quite often in CNTK, it gets bad if we don't do it carefully. It also require move to get_v7 and we can't test until we can run fp16.
 // For now, let's keep it simple and enable tensor core all the time for fp16.
@@ -27,10 +28,137 @@ const char* CudaErrString<cudnnStatus_t>(cudnnStatus_t x)
 // CNTK with cuDNN by default uses NCHW formats for both inputs/outputs and kernels.
 #define TENSOR_FORMAT CUDNN_TENSOR_NCHW
 #define FILTER_FORMAT CUDNN_TENSOR_NCHW
-//#define __PROFILE__
 
+#define LOGPRINTF(stream, ...) \
+    do \
+    { \
+        fprintf(stream, __VA_ARGS__); \
+    } while(0)
 
 namespace Microsoft { namespace MSR { namespace CNTK {
+
+static wstring ConvFwdAlgoToString(cudnnConvolutionFwdAlgo_t algo)
+{
+	switch (algo)
+	{
+	case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM";
+	case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM";
+	case CUDNN_CONVOLUTION_FWD_ALGO_GEMM:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_GEMM";
+	case CUDNN_CONVOLUTION_FWD_ALGO_DIRECT:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_DIRECT";
+	case CUDNN_CONVOLUTION_FWD_ALGO_FFT:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT";
+	case CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING";
+	case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD";
+	case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED:
+		return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED";
+	default:
+		return L"UNKNOWN_FWD_ALGO";
+	}
+}
+
+static wstring ConvBwdFilterAlgoToString(cudnnConvolutionBwdFilterAlgo_t algo)
+{
+	switch (algo)
+	{
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0";
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1";
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT";
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3";
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD";
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED";
+	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING:
+		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING";
+	default:
+		return L"UNKNOWN_BWD_FILTER_ALGO";
+	}
+}
+
+static wstring ConvBwdDataAlgoToString(cudnnConvolutionBwdDataAlgo_t algo)
+{
+	switch (algo)
+	{
+	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_0:
+		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_0";
+	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_1:
+		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_1";
+	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT:
+		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT";
+	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING:
+		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING";
+	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD:
+		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD";
+	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED:
+		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED";
+	default:
+		return L"UNKNOWN_BWD_DATA_ALGO";
+	}
+}
+
+static wstring ConvAlgoToString(int algo, wstring algoType)
+{
+	if (algoType == L"Forward")
+		return ConvFwdAlgoToString((cudnnConvolutionFwdAlgo_t)algo);
+	else if (algoType == L"BackwardFilter")
+		return ConvBwdFilterAlgoToString((cudnnConvolutionBwdFilterAlgo_t)algo);
+	else if (algoType == L"BackwardData")
+		return ConvBwdDataAlgoToString((cudnnConvolutionBwdDataAlgo_t)algo);
+	else
+		return L"UNKNOWN_ALGO_TYPE";
+}
+
+static wstring MathTypeToString(cudnnMathType_t mathType)
+{
+	switch (mathType)
+	{
+	case CUDNN_DEFAULT_MATH:
+		return L"CUDNN_DEFAULT_MATH";
+	case CUDNN_TENSOR_OP_MATH:
+		return L"CUDNN_TENSOR_OP_MATH";
+	default:
+		return L"UNKNOWN_MATH_TYPE";
+	}
+}
+
+static bool FwdAlgoSupportedTrueHalf(cudnnConvolutionFwdAlgo_t algo)
+{
+	return (algo == CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM || algo == CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED);
+}
+
+static bool BwdDataAlgoSupportedTrueHalf(cudnnConvolutionBwdDataAlgo_t algo)
+{
+	return (algo == CUDNN_CONVOLUTION_BWD_DATA_ALGO_1 || algo == CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED);
+}
+
+static bool BwdFilterAlgoSupportedTrueHalf(cudnnConvolutionBwdFilterAlgo_t algo)
+{
+	return (algo == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1 || algo == CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED);
+}
+
+template <class AlgoPerfType>
+bool AlgoSupportedTrueHalf(AlgoPerfType algoPerf)
+{
+	int algoIdx = (int)algoPerf.algo;
+	if (std::is_same<AlgoPerfType, cudnnConvolutionFwdAlgoPerf_t>::value)
+		return FwdAlgoSupportedTrueHalf((cudnnConvolutionFwdAlgo_t)algoIdx);
+	else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdDataAlgoPerf_t>::value)
+		return BwdDataAlgoSupportedTrueHalf((cudnnConvolutionBwdDataAlgo_t)algoIdx);
+	else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdFilterAlgoPerf_t>::value)
+		return BwdFilterAlgoSupportedTrueHalf((cudnnConvolutionBwdFilterAlgo_t)algoIdx);
+	else
+		return false;
+}
 
 class CuDnnKernel
 {
@@ -241,8 +369,6 @@ public:
 		// Use CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM for forward
 		// Use CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1 for backward_filter
 		// Use CUDNN_CONVOLUTION_BWD_DATA_ALGO_1 for backward_data
-		if (m_forceTrueHalf)
-			m_forceDeterministicAlgorithms = true;
 
         auto inShape = geometry->InputShape();
         auto outShape = geometry->OutputShape();
@@ -604,7 +730,7 @@ private:
         m_outT.UpdateBatchSize(batchSize);
 
         // keep running if nothing changes
-        if (!algo.NeedAutotuning(batchSize, workspace.BufferSize()))
+        if (!algo.NeedAutotuning(batchSize, workspace.BufferSize()) && algo.MaxAlgoMBSize != 0)
             return;
 
         // if batchsize changes again when just finish init, go back to init again
@@ -638,19 +764,8 @@ private:
                 assert(calgo == 1);                                 // only one deterministic algorithm will be returned
                 algo.RecordAlgoBatchSizeWorkspaceSize(true, (*algoPerf).algo, batchSize, (*algoPerf).memory);
                 algo.autotuningState = AutotuningState::Running;    // no further need for tuning since this is deterministic, directly enter running state
+				return;
             }
-            else
-            {
-                // This branch handles two cases: a) When first MB comes through, and b) When input has free dimensions.
-                // If the handling of these two cases changes, we may need to create separate branches for them.
-                CUDNN_CALL(staticFinder(algo.selectedAlgo, true));
-                algo.maxMBSizeSeen = batchSize;
-                // Here MaxAlgoWorkspaceSize is temporarily storing 'possible' need changed by staticFinder.
-                // Thus we don't set maxAlgo records and those will be tuned later.
-                algo.RecordAlgoBatchSizeWorkspaceSize(false, algo.selectedAlgo, batchSize, 0);
-                algo.autotuningState = m_inputHasFreeDimension ? AutotuningState::Running : AutotuningState::PendingTuning;
-            }
-            return;
         }
 
         // we allocate workspace and find algorithm if batchSize is higher than ever seen
@@ -680,7 +795,39 @@ private:
                 calgo = 0;
                 CUDNN_CALL(finder(calgo, algoPerf));
                 assert(calgo > 0);
+
+				///////////////////////////////// PROFILE_BEGIN /////////////////////////////
+				LOGPRINTF(stderr, "Start Conv Profile\n=================================\n");
+				for (int algo_idx = 0; algo_idx < calgo; ++algo_idx)
+				{
+					wstring algoName;
+					if (std::is_same<typename TAlgo::typeT, cudnnConvolutionFwdAlgoPerf_t>::value)
+						algoName = ConvAlgoToString((int)algoPerf[algo_idx].algo, L"Forward");
+					else if (std::is_same<typename TAlgo::typeT, cudnnConvolutionBwdDataAlgoPerf_t>::value)
+						algoName = ConvAlgoToString((int)algoPerf[algo_idx].algo, L"BackwardData");
+					else if (std::is_same<typename TAlgo::typeT, cudnnConvolutionBwdFilterAlgoPerf_t>::value)
+						algoName = ConvAlgoToString((int)algoPerf[algo_idx].algo, L"BackwardFilter");
+					else
+						algoName = L"UNKNOWN_ALGO_TYPE";
+					LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), algoPerf[algo_idx].time, MathTypeToString(algoPerf[algo_idx].mathType).c_str());
+				}
+				LOGPRINTF(stderr, "=================================\n");
+				///////////////////////////////// PROFILE_END   /////////////////////////////
+
                 auto res = algoPerf;        // first returned algorithm is the fastest
+
+				if (m_forceTrueHalf)
+				{
+					for (int algo_idx = 0; algo_idx < calgo; ++algo_idx)
+					{
+						if (AlgoSupportedTrueHalf<typename TAlgo::typeT>(algoPerf[algo_idx]))
+						{
+							res = algoPerf + algo_idx;
+							break;
+						}
+					}
+				}
+
                 algo.RecordAlgoBatchSizeWorkspaceSize(true, (*res).algo, batchSize, (*res).memory);
                 algo.AlgoMathType = (*res).mathType;
                 algo.autotuningState = AutotuningState::Running;

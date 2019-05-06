@@ -78,7 +78,7 @@
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateLineInfo>true</GenerateLineInfo>
       <AdditionalCompilerOptions>/WX</AdditionalCompilerOptions>
-      <CodeGeneration>$(NvidiaCompute)</CodeGeneration>
+      <CodeGeneration>$(NvidiaCompute);compute_70,sm_70</CodeGeneration>
       <FastMath>true</FastMath>
       <GPUDebugInfo>false</GPUDebugInfo>
       <GPUDebugInfo Condition="'$(CNTK_CUDA_DEVICE_DEBUGINFO)'=='1'">true</GPUDebugInfo>
