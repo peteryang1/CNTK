@@ -875,6 +875,8 @@ private:
 					LOGPRINTF(stderr, "\n\nConv log for %ls Type:\n", DataTypeToString(kComputeTypesToTry[convDataTypeIdx]).c_str());
 					LogConvAlgoTime<typename TAlgo::typeT>(algoCount, algoPerfStats.data());
 					algosToCompare[convDataTypeIdx] = algoPerfStats[0];
+					if (algosToCompare[convDataTypeIdx].time < 0)
+						algosToCompare[convDataTypeIdx].time = 1e10;
 
 					if (!std::is_same<ElemType, half>::value)
 						break;
