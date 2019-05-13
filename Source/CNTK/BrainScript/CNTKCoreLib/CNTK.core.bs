@@ -73,7 +73,7 @@ FeatureNormalizeLayer {featureNormalizeType=2, precision=precision} =
 # Note: outputDimension may describe a tensor as well.
 AdditiveFullConnectionLayer {inputDimension, outputDimension, weightNormalize=true, bias=0, annealBias=false, biasBase=0, biasGamma=0, biasPower=1, biasMin=0, biasMax=0, init='glorotUniform', initValueScale=1, precision=precision} =
 {
-    W = ParameterTensor {_ConcatArrays (outputDimension, inputDimension), init=init, initValueScale=initValueScale}
+    W = ParameterTensor {_ConcatArrays (outputDimension, inputDimension), init=init, initValueScale=initValueScale, precision=precision}
 
     apply (labelSequence, outProbVectorSequence) = AdditiveFullConnection(labelSequence, outProbVectorSequence, W, outputDimension=outputDimension, weightNormalize=weightNormalize, bias=bias, annealBias=annealBias, biasBase=biasBase, biasGamma=biasGamma, biasPower=biasPower, biasMin=biasMin, biasMax=biasMax, precision=precision)
 }.apply
