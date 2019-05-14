@@ -1094,6 +1094,12 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
     clock_t endTime = 0;
 #endif
 
+	double forwardTimeMean = 0;
+	double backwardTimeMean = 0;
+	double aggregateTimeMean = 0;
+	clock_t startTime = 0;
+	clock_t endTime = 0;
+	size_t miniBatchCount = 0;
 
     ScopedNetworkOperationMode modeGuard(net, NetworkOperationMode::training);
 
@@ -1406,11 +1412,15 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
                 startTime = clock();
 #endif
 
+				startTime = clock();
 
                 // compute eval node first since when gradient is computed the forward function values
                 // may be changed and need to be recomputed when gradient and function value share the same matrix
                 net->ForwardProp(forwardPropRoots); // the bulk of this evaluation is reused in ComputeGradient() below
 
+				endTime = clock();
+				double forwardTime = static_cast<double>(endTime - startTime) / CLOCKS_PER_SEC;
+				forwardTimeMean = (miniBatchCount * forwardTimeMean + forwardTime) / (miniBatchCount + 1);
 
 #ifdef __PROFILE__
                 endTime = clock();
@@ -1426,9 +1436,13 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 #ifdef __PROFILE__
                 startTime = clock();
 #endif
+
+				startTime = clock();
                 if (learnRatePerSample > 0.01 * m_minLearnRate) // only compute gradient when learning rate is large enough
                     net->Backprop(criterionNodes[0]);
-
+				endTime = clock();
+				double backwardTime = static_cast<double>(endTime - startTime) / CLOCKS_PER_SEC;
+				backwardTimeMean = (miniBatchCount * backwardTimeMean + backwardTime) / (miniBatchCount + 1);
 
 #ifdef __PROFILE__
                 endTime = clock();
@@ -1467,7 +1481,7 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 #ifdef __PROFILE__
         startTime = clock();
 #endif
-
+		startTime = clock();
 
         // Sum of actualMBSize across all nodes when using parallel training
         // 'aggregate' here means across-worker aggregate for this one minibatch.
@@ -1848,6 +1862,10 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
         aggregateTime += endTime - startTime;
 #endif
 
+		endTime = clock();
+		double aggregateTime = static_cast<double>(endTime - startTime) / CLOCKS_PER_SEC;
+		aggregateTimeMean = (miniBatchCount * aggregateTimeMean + aggregateTime) / (miniBatchCount + 1);
+		++miniBatchCount;
 
         profiler.NextSample();
         isFirstMinibatch = false;
@@ -1865,6 +1883,8 @@ size_t SGD<ElemType>::TrainOneEpoch(ComputationNetworkPtr net,
 	}
 
     // --- END MAIN MINIBATCH LOOP
+
+	LOGPRINTF(stderr, "In this epoch, average forward time: %lf, average backward time: %lf, average aggregate time: %lf\n", forwardTimeMean, backwardTimeMean, aggregateTimeMean);
 	
 	if (useModelAggregation)
     {
