@@ -166,7 +166,7 @@ static wstring DataTypeToString(cudnnDataType_t dataType)
 template <class AlgoPerfType>
 void LogConvAlgoTime(int algoCount, AlgoPerfType *perfs)
 {
-	LOGPRINTF(stderr, "Start Conv Profile\n=================================\n");
+	LOGPRINTF(stderr, "[Start Conv Profile]\n");
 
 	if (std::is_same<AlgoPerfType, cudnnConvolutionFwdAlgoPerf_t>::value)
 		for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
@@ -188,10 +188,10 @@ void LogConvAlgoTime(int algoCount, AlgoPerfType *perfs)
 		}
 	else
 	{
-		LOGPRINTF(stderr, "UNKNOWN_ALGO_TYPE");
+		LOGPRINTF(stderr, "UNKNOWN_ALGO_TYPE\n");
 	}
 
-	LOGPRINTF(stderr, "=================================\n");
+	LOGPRINTF(stderr, "[End Conv Profile]\n");
 }
 
 class CuDnnKernel
@@ -865,6 +865,9 @@ private:
 				std::array<typename TAlgo::typeT, 2> algosToCompare;
 				typename TAlgo::typeT *res = nullptr;
 
+				LOGPRINTF(stderr, "\n==================================Start Conv Debug Info======================================\n");
+				LOGPRINTF(stderr, "[Conv kernel Info]:\n%s\n", ((std::string)(*m_geometry)).c_str());
+
 				for (int convDataTypeIdx = 0; convDataTypeIdx < 2; ++convDataTypeIdx)
 				{
 					ChangeConvDescDataType(kComputeTypesToTry[convDataTypeIdx], convDirection);
@@ -897,6 +900,8 @@ private:
 					ChangeConvDescDataType(kComputeTypesToTry[bestAlgoDataTypeIndex], convDirection);
 					LOGPRINTF(stderr, "Choose %s to compute\n", (bestAlgoDataTypeIndex == 0) ? "pseudo-half(float)" : "true-half(half)");
 				}
+
+				LOGPRINTF(stderr, "\n==================================End Conv Debug Info======================================\n");
 
                 algo.RecordAlgoBatchSizeWorkspaceSize(true, (*res).algo, batchSize, (*res).memory);
                 algo.AlgoMathType = (*res).mathType;
