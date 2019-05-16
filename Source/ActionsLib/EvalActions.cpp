@@ -268,3 +268,4 @@ void DoWriteOutput(const ConfigParameters& config)
 
 template void DoWriteOutput<float>(const ConfigParameters& config);
 template void DoWriteOutput<double>(const ConfigParameters& config);
+template void DoWriteOutput<half>(const ConfigParameters& config);

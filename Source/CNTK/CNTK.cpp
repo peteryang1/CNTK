@@ -253,6 +253,10 @@ bool DispatchThisAction<half>(const string &thisAction, const ConfigParameters &
 	{
 		DoEval<half>(commandParams);
 	}
+	else if (thisAction == "write")
+	{
+		DoWriteOutput<half>(commandParams);
+	}
 	else
 	{
 		RuntimeError("half only supported for action train, eval(test) or trainRNN.");
