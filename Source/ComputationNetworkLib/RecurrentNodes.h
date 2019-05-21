@@ -57,9 +57,12 @@ protected:
             LogicError("LateAttachingNode::AttachInputs: must only be called once");
         };
     }
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
 public:
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override;
+	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
     virtual void Load(File& fstream, size_t modelVersion) override;
     virtual void Save(File& fstream) const override;
     virtual void UpdateFunctionMBSize() override;

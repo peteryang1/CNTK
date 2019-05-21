@@ -79,6 +79,14 @@ enum CopyNodeFlags // flags to be passed to the CopyTo() function
     copyNodeAcrossNetworks = 4  // allow a cross network child copy
 };
 
+enum class ComputationNodeDataType 
+{
+	UNKONWN,
+	FLOAT,
+	DOUBLE,
+	HALF
+};
+
 #pragma region base computation class
 
 // =======================================================================
@@ -1290,6 +1298,51 @@ public:
         return p ? p->shared_from_this() : nullptr;
     }
 
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<ComputationNode<NodeDataType>>(nodeP);
+		if (!node)
+			InvalidArgument("an ComputationNodeBasePtr of mismatching precision was passed in function TypedCopyToImpl");
+
+		if (m_value)
+		{
+			node->CreateValueMatrixIfNull();
+			node->m_value->CastAssignValuesOf(*m_value);
+		}
+		else
+			node->m_value = nullptr;
+		if (m_gradient)
+		{
+			node->CreateGradientMatrixIfNull();
+			node->m_gradient->CastAssignValuesOf(*m_gradient);
+		}
+		else
+			node->m_gradient = nullptr;
+	}
+
+	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const
+	{
+		Base::CopyTo(nodeP, newName, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default: 
+				RuntimeError("Type not supported");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1439,6 +1492,13 @@ protected:
             LogicError("Inputs: inputIndex %d is out of range for %ls %ls operation.", (int) inputIndex, NodeName().c_str(), OperationName().c_str());
         return DownCast(m_inputs[inputIndex]);
     }
+
+	inline ComputationNodeBasePtr InputInBasePtr(const size_t inputIndex) const
+	{
+		if (inputIndex >= m_inputs.size())
+			LogicError("Inputs: inputIndex %d is out of range for %ls %ls operation.", (int)inputIndex, NodeName().c_str(), OperationName().c_str());
+		return m_inputs[inputIndex];
+	}
 
     template<typename InputType>
     inline shared_ptr<ComputationNode<InputType>> TypedInput(const size_t inputIndex) const

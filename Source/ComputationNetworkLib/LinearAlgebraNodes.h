@@ -397,6 +397,28 @@ public:
     {
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -429,6 +451,14 @@ public:
     }
 
 protected:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<TimesNodeBase<NodeDataType, m_transpose>>(nodeP);
+		node->m_outputRank = m_outputRank;
+		node->m_inferInputRankToMap = m_inferInputRankToMap;
+	}
+
     // if the left argument of the matrix product (A) has a time axis, it can only be applied sample by sample
     // where each sample is treated as a separate matrix object (as a consequence, it then also applies to B and the result as well)
     TensorView<ElemType> OneSampleTensorFor(int inputIndex/*-1 for output*/, bool gradient/*instead of value*/, const FrameRange& fr)
@@ -1195,6 +1225,28 @@ public:
         AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1235,6 +1287,15 @@ public:
         // This operation is intended only for inference
         NOT_IMPLEMENTED;
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<QuantizedTimesNode<NodeDataType>>(nodeP);
+		node->m_bitShiftA = m_bitShiftA;
+		node->m_bitShiftB = m_bitShiftB;
+	}
 };
 
 template class QuantizedTimesNode<float>;
@@ -1550,6 +1611,28 @@ public:
         SetDims(TensorShape::Scalar(Environment().IsV2Library()), Input(1)->HasMBLayout());
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1585,6 +1668,16 @@ public:
         ReleaseMatrixToPool(m_invNorm1, matrixPool);
         ReleaseMatrixToPool(m_temp, matrixPool);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CosDistanceNode<NodeDataType>>(nodeP);
+		node->m_invNorm0->CastAssignValuesOf(*m_invNorm0);
+		node->m_invNorm1->CastAssignValuesOf(*m_invNorm1);
+		node->m_temp->CastAssignValuesOf(*m_temp);
+	}
 
 private:
     // invNorm nodes tranfer data between ForwardProp and BackpropTo
@@ -1866,6 +1959,28 @@ public:
         SetDims(TensorShape(negNumber + 1), HasMBLayout());
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1909,6 +2024,19 @@ public:
         ReleaseMatrixToPool(m_invNormSquare, matrixPool);
         ReleaseMatrixToPool(m_temp, matrixPool);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CosDistanceWithNegativeSamplesNode<NodeDataType>>(nodeP);
+		node->m_invNorm0->CastAssignValuesOf(*m_invNorm0);
+		node->m_invNorm1->CastAssignValuesOf(*m_invNorm1);
+		node->m_invNormSquare->CastAssignValuesOf(*m_invNormSquare);
+		node->m_leftTerm->CastAssignValuesOf(*m_leftTerm);
+		node->m_rightTerm->CastAssignValuesOf(*m_rightTerm);
+		node->m_temp->CastAssignValuesOf(*m_temp);
+	}
 
 private:
     // invNorm nodes tranfer data between ForwardProp and BackpropTo
@@ -1976,13 +2104,18 @@ public:
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName,
                         const CopyNodeFlags flags) const override;
 
+	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType,
+							 const CopyNodeFlags flags) const override;
+
     virtual void Validate(bool isFinalValidationPass);
+
 
     // Returns tensor view for the accumulator matrix. If accumulator matrix memory is not allocated
     // accumulator matrix will be resized (memory will be allocated).
     TensorView<ElemType> EnsureAccumlator();
 
 protected:
+	template <typename NodeDataType> void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
     friend void AggregateAccumulatorValuesAndUpdateEvaluation<ElemType>(
         shared_ptr<ComputationNetwork> net,

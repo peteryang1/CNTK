@@ -513,6 +513,43 @@ void LearnableParameter<ElemType>::Load(File& fstream, size_t modelVersion) /*ov
 }
 
 template <class ElemType>
+template <typename NodeDataType>
+void LearnableParameter<ElemType>::TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+{
+	auto node = dynamic_pointer_cast<LearnableParameter<NodeDataType>>(nodeP);
+	node->m_initString = m_initString;
+	node->m_randomSeed = m_randomSeed;
+	node->m_initValueScale = static_cast<NodeDataType>(m_initValueScale);
+	node->m_initFilterRank = m_initFilterRank;
+	node->m_initOutputRank = m_initOutputRank;
+	node->m_initOnCPUOnly = m_initOnCPUOnly;
+	node->m_initValue = static_cast<NodeDataType>(m_initValue);
+}
+
+template <class ElemType>
+/*virtual*/ void LearnableParameter<ElemType>::TypedCopyTo(ComputationNodeBasePtr nodeP, const wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const /*override*/
+{
+	Base::TypedCopyTo(nodeP, newName, dataType, flags);
+	if (flags & CopyNodeFlags::copyNodeValue)
+	{
+		switch (dataType)
+		{
+		case ComputationNodeDataType::DOUBLE:
+			TypedCopyToImpl<double>(nodeP);
+			break;
+		case ComputationNodeDataType::FLOAT:
+			TypedCopyToImpl<float>(nodeP);
+			break;
+		case ComputationNodeDataType::HALF:
+			TypedCopyToImpl<half>(nodeP);
+			break;
+		default:
+			RuntimeError("Type is not supported.");
+		}
+	}
+}
+
+template <class ElemType>
 /*virtual*/ void LearnableParameter<ElemType>::CopyTo(ComputationNodeBasePtr nodeP, const wstring& newName, const CopyNodeFlags flags) const /*override*/
 {
     Base::CopyTo(nodeP, newName, flags);

@@ -240,6 +240,28 @@ public:
         ValidateUnaryMap(isFinalValidationPass);
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -263,6 +285,14 @@ public:
         Base::ReleaseMatricesAfterBackprop(matrixPool);
         ReleaseMatrixToPool(m_gradientTemp, matrixPool);
     }
+
+protected:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<SoftmaxNodeBase<NodeDataType>>(nodeP);
+		node->m_gradientTemp->CastAssignValuesOf(*m_gradientTemp);
+	}
 
 protected:
     shared_ptr<Matrix<ElemType>> m_gradientTemp;
@@ -312,6 +342,28 @@ public:
         functionValues.InplaceExp();
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -334,6 +386,14 @@ public:
         Base::ReleaseMatricesAfterBackprop(matrixPool);
         ReleaseMatrixToPool(m_diff, matrixPool);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<SoftmaxNode<NodeDataType>>(nodeP);
+		node->m_diff->CastAssignValuesOf(*m_diff);
+	}
 
 private:
     shared_ptr<Matrix<ElemType>> m_diff;
@@ -379,6 +439,28 @@ public:
         functionValues.AssignLogSoftmaxOf(inputFunctionValues, true);
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -401,6 +483,14 @@ public:
         Base::ReleaseMatricesAfterBackprop(matrixPool);
         ReleaseMatrixToPool(m_softmax, matrixPool);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<LogSoftmaxNode<NodeDataType>>(nodeP);
+		node->m_softmax->CastAssignValuesOf(*m_softmax);
+	}
 
 private:
     shared_ptr<Matrix<ElemType>> m_softmax;

@@ -278,6 +278,85 @@ public:
         SetDims(TensorShape(InputRef(2).Value().GetNumRows()), HasMBLayout());
     }
 
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<MarginInnerProductNode<NodeDataType>>(nodeP);
+
+		node->m_label->CastAssignValuesOf(*m_label);
+		node->m_inputMagnitude->CastAssignValuesOf(*m_inputMagnitude);
+		node->m_weightMagnitude->CastAssignValuesOf(*m_weightMagnitude);
+		node->m_cosTheta->CastAssignValuesOf(*m_cosTheta);
+
+		switch (m_marginCoefficient)
+		{
+		case 1:
+			break;
+		case 2:
+		{
+			node->m_cosThetaQuadratic->SetVaCastAssignValuesOflue(*m_cosThetaQuadratic);
+			node->m_sign0->CastAssignValuesOf(*m_sign0);
+			break;
+		}
+		case 3:
+		{
+			node->m_cosThetaQuadratic->CastAssignValuesOf(*m_cosThetaQuadratic);
+			node->m_cosThetaCubic->CastAssignValuesOf(*m_cosThetaCubic);
+			node->m_sign1->CastAssignValuesOf(*m_sign1);
+			node->m_sign2->CastAssignValuesOf(*m_sign2);
+			break;
+		}
+		case 4:
+		{
+			node->m_cosThetaQuadratic->CastAssignValuesOf(*m_cosThetaQuadratic);
+			node->m_cosThetaCubic->CastAssignValuesOf(*m_cosThetaCubic);
+			node->m_cosThetaQuartic->CastAssignValuesOf(*m_cosThetaQuartic);
+			node->m_sign3->CastAssignValuesOf(*m_sign3);
+			node->m_sign4->CastAssignValuesOf(*m_sign4);
+			break;
+		}
+		default:
+			LogicError("This marginCoefficient is not supported yet.");
+		}
+
+		node->m_tempMatrix->CastAssignValuesOf(*m_tempMatrix);
+
+		node->m_inputDimension = m_inputDimension;
+		node->m_outputDimension = m_outputDimension;
+		node->m_minibatchSize = m_minibatchSize;
+		node->m_marginCoefficient = m_marginCoefficient;
+		node->m_base = m_base;
+		node->m_gamma = m_gamma;
+		node->m_power = m_power;
+		node->m_lambdaMin = m_lambdaMin;
+		node->m_iter = m_iter;
+		node->m_lambda = m_lambda;
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -537,6 +616,40 @@ public:
         ValidateUnaryMap(isFinalValidationPass);
     }
 
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<FeatureNormalizeNode<NodeDataType>>(nodeP);
+		node->m_normalizeType = m_normalizeType;
+		node->m_magnitude->CastAssignValuesOf(*m_magnitude);
+		node->m_temp1->CastAssignValuesOf(*m_temp1);
+		node->m_temp2->CastAssignValuesOf(*m_temp2);
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -603,6 +716,26 @@ class AdditiveFullConnectionNode : public ComputationNodeNonLooping /*Computatio
     {
         return L"AdditiveFullConnection";
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<AdditiveFullConnectionNode<NodeDataType>>(nodeP);
+		node->m_outputDimension = m_outputDimension;
+		node->m_minibatchSize = m_minibatchSize;
+		node->m_weightNormalize = m_weightNormalize;
+		node->m_bias = m_bias;
+		node->m_annealBias = m_annealBias;
+		node->m_biasBase = m_biasBase;
+		node->m_biasGamma = m_biasGamma;
+		node->m_biasPower = m_biasPower;
+		node->m_biasMin = m_biasMin;
+		node->m_biasMax = m_biasMax;
+		node->m_iter = m_iter;
+
+		node->m_label->CastAssignValuesOf(*m_label);
+	}
 
 public:
     AdditiveFullConnectionNode(const ScriptableObjects::IConfigRecordPtr configp)
@@ -696,6 +829,28 @@ public:
 
         SetDims(TensorShape(InputRef(2).Value().GetNumRows()), HasMBLayout());
     }
+
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -872,6 +1027,47 @@ public:
         Base::Validate(isFinalValidationPass);
     }
 
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CenterLossNode<NodeDataType>>(nodeP);
+		node->m_leftMinusRight->CastAssignValuesOf(*m_leftMinusRight);
+		node->m_centroids->CastAssignValuesOf(*m_centroids);
+		node->m_centroidsBatch->CastAssignValuesOf(*m_centroidsBatch);
+		node->m_label->CastAssignValuesOf(*m_label);
+		node->m_labelValue->CastAssignValuesOf(*m_labelValue);
+		node->m_lambda = m_lambda;
+		node->m_alpha = m_alpha;
+		node->m_featureDim = m_featureDim;
+		node->m_labelDim = m_labelDim;
+		node->m_normalize = m_normalize;
+		node->m_minibatchSize = m_minibatchSize;
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1045,6 +1241,28 @@ public:
         m_N /= 2;
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1087,6 +1305,17 @@ public:
     size_t m_featureSize;
     size_t m_channels;
     size_t m_N;
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<ChannelMultiplyNode<NodeDataType>>(nodeP);
+		node->m_buffer->CastAssignValuesOf(*m_buffer);
+		node->m_featureSize = m_featureSize;
+		node->m_channels = m_channels;
+		node->m_N = m_N;
+	}
 };
 
 
@@ -1150,6 +1379,37 @@ public:
     {
         ValidateBinaryReduce(isFinalValidationPass);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<SquareErrorNode<NodeDataType>>(nodeP);
+		node->m_leftMinusRight->CastAssignValuesOf(*m_leftMinusRight);
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1281,6 +1541,28 @@ public:
         ValidateBinaryReduce(isFinalValidationPass);
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -1309,12 +1591,22 @@ public:
     }
 
 protected:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CrossEntropyWithSoftmaxNode<NodeDataType>>(nodeP);
+		node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
+		node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
+	}
+
+protected:
     shared_ptr<Matrix<ElemType>> m_logSoftmaxOfRight;
     shared_ptr<Matrix<ElemType>> m_softmaxOfRight;
 };
 
 template class CrossEntropyWithSoftmaxNode<float>;
 template class CrossEntropyWithSoftmaxNode<double>;
+template class CrossEntropyWithSoftmaxNode<half>;
 
 // -----------------------------------------------------------------------
 /// CrossEntropyNode (labels, prediction)
@@ -1401,6 +1693,39 @@ public:
     {
         ValidateBinaryReduce(isFinalValidationPass);
     }
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CrossEntropyNode<NodeDataType>>(nodeP);
+		node->m_logOfRight->CastAssignValuesOf(*m_logOfRight);
+		if (m_leftDivRight != nullptr)
+		{
+			node->m_leftDivRight->CastAssignValuesOf(*m_leftDivRight);
+		}
+	}
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1509,6 +1834,37 @@ public:
     {
         ValidateUnaryReduce(isFinalValidationPass);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<MatrixL1RegNode<NodeDataType>>(nodeP);
+		node->m_gradientOfL1Norm->CastAssignValuesOf(*m_gradientOfL1Norm);
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1824,6 +2180,47 @@ public:
 
         ValidateBinaryReduce(isFinalValidationPass);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<LambdaRankNode<NodeDataType>>(nodeP);
+		node->m_pairwiseDifferences->CastAssignValuesOf(*m_pairwiseDifferences);
+		node->m_lambdas->CastAssignValuesOf(*m_lambdas);
+		node->m_weightUpdate->CastAssignValuesOf(*m_weightUpdate);
+		node->m_urlGain0->CastAssignValuesOf(*m_urlGain0);
+		node->m_urlGain1->CastAssignValuesOf(*m_urlGain1);
+		node->m_urlDiscount0->CastAssignValuesOf(*m_urlDiscount0);
+		node->m_urlDiscount1->CastAssignValuesOf(*m_urlDiscount1);
+
+		node->m_queryUrls = m_queryUrls;
+		node->m_urlSorter = m_urlSorter;
+		node->m_logWeights = m_logWeights;
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -2448,6 +2845,7 @@ public:
         AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
     }
 
+	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override;
 
     virtual void Save(File& fstream) const override;
@@ -2455,6 +2853,9 @@ public:
 
 protected:
     void UpdateWeightsPrefixSum();
+
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
     // Runs the sampling returning a vector with the id's of the samples. The parameter nTries is used to return the number of draws that was needed
     // to get the expected number of samples.
@@ -3295,6 +3696,40 @@ public:
         ReleaseMatrixToPool(m_sumOfWeights, matrixPool);
     }
 
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<LogisticNode<NodeDataType>>(nodeP);
+		node->m_classZeroLabels->CastAssignValuesOf(*m_classZeroLabels);
+		node->m_result->CastAssignValuesOf(*m_result);
+		node->m_temp->CastAssignValuesOf(*m_temp);
+		node->m_sumOfWeights->CastAssignValuesOf(*m_sumOfWeights);
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(const ComputationNodePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -3443,6 +3878,28 @@ public:
         return RngUser::GetRNGHandle(ValuePtr()->GetDeviceId());
     }
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -3467,6 +3924,16 @@ public:
         Base::ReleaseMatricesAfterBackprop(matrixPool);
         ReleaseMatrixToPool(m_maskOfDropout, matrixPool);
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<DropoutNode<NodeDataType>>(nodeP);
+		node->SetDropoutRate(GetDropoutRate());
+		node->SetRngState(GetRngSeed(), GetRngOffset());
+		node->m_maskOfDropout = m_maskOfDropout;
+	}
 
 private:
     shared_ptr<Matrix<ElemType>> m_maskOfDropout;
@@ -3671,6 +4138,42 @@ public:
 
         SetDims(TensorShape(m_dims), HasMBLayout());
     }
+
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<GlobalConcatNode<NodeDataType>>(nodeP);
+		node->m_blockIndex = m_blockIndex;
+		node->m_growthRate = m_growthRate;
+		node->m_memoryLength = m_segmentIndex;
+		node->m_segmentIndex = m_segmentNum;
+		node->m_startIndex = m_startIndex;
+		node->m_numRows = m_numRows;
+	}
+
+public:
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -3923,6 +4426,28 @@ public:
 
     //void AttachInputs(const std::vector<ComputationNodeBasePtr>& inputs) override;
 
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
+
     void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
         Base::CopyTo(nodeP, newName, flags);
@@ -3941,6 +4466,22 @@ public:
             node->m_disableRegularization = m_disableRegularization;
         }
     }
+private:
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<BatchNormalizationNode<NodeDataType>>(nodeP);
+		assert(node != nullptr);
+
+		node->m_spatial = m_spatial;
+		node->m_normTimeConst = m_normTimeConst;
+		node->m_blendTimeConst = m_blendTimeConst;
+		node->m_imageLayoutKind = m_imageLayoutKind;
+		node->m_runCountUntied = m_runCountUntied;
+		node->m_epsilon = m_epsilon;
+		node->m_useCntkEngine = m_useCntkEngine;
+		node->m_disableRegularization = m_disableRegularization;
+	}
 
 private: // time-constant conversions
     // The case of parameter tying is tricky. The same set of BN parameters can be shared

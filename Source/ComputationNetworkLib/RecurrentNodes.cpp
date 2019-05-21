@@ -45,6 +45,44 @@ DelayedValueNodeBase<ElemType, direction>::DelayedValueNodeBase(DEVICEID_TYPE de
     m_timeStep = (int)timeStep;
 }
 
+template <class ElemType, int direction>
+template <typename NodeDataType>
+void DelayedValueNodeBase<ElemType, direction>::TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+{
+	auto node = dynamic_pointer_cast<DelayedValueNodeBase<NodeDataType, direction /*, SequenceStart_or_End*/>>(nodeP);
+	node->m_timeStep = m_timeStep;
+	node->m_initialStateValue = static_cast<NodeDataType>(m_initialStateValue);
+	node->m_initialStateValueMatrix->CastAssignValuesOf(m_initialStateValue);
+	node->m_delayedValue->CastAssignValuesOf(*m_delayedValue);
+	if (m_delayedActivationMBLayout)
+		(node->m_delayedActivationMBLayout = make_shared<MBLayout>())->CopyFrom(m_delayedActivationMBLayout);
+	else
+		node->m_delayedActivationMBLayout = nullptr;
+}
+
+template<class ElemType, int direction>
+/*virtual*/ void DelayedValueNodeBase<ElemType, direction>::TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const /*override*/
+{
+	Base::TypedCopyTo(nodeP, newName, dataType, flags);
+	if (flags & CopyNodeFlags::copyNodeValue)
+	{
+		switch (dataType)
+		{
+		case ComputationNodeDataType::DOUBLE:
+			TypedCopyToImpl<double>(nodeP);
+			break;
+		case ComputationNodeDataType::FLOAT:
+			TypedCopyToImpl<float>(nodeP);
+			break;
+		case ComputationNodeDataType::HALF:
+			TypedCopyToImpl<half>(nodeP);
+			break;
+		default:
+			RuntimeError("Type is not supported.");
+		}
+	}
+}
+
 template<class ElemType, int direction>
 /*virtual*/ void DelayedValueNodeBase<ElemType,direction>::CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const /*override*/
 {
@@ -1201,6 +1239,39 @@ public:
         else
             return 0;
     }
+
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP)
+	{
+		auto node = dynamic_pointer_cast<ShiftNode<NodeDataType>>(nodeP);
+		node->m_fromOffset = m_fromOffset;
+		node->m_boundaryMode = m_boundaryMode;
+		node->m_shiftDimParam = m_shiftDimParam;
+		node->m_shiftDim = m_shiftDim;
+		node->m_state = m_state;
+	}
+
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {

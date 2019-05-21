@@ -48,6 +48,29 @@ template <class ElemType>
 }
 
 template <class ElemType>
+/*virtual*/ void ReduceElementsNode<ElemType>::TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const /*override*/
+{
+	Base::TypedCopyTo(nodeP, newName, dataType, flags);
+	if (flags & CopyNodeFlags::copyNodeValue)
+	{
+		switch (dataType)
+		{
+		case ComputationNodeDataType::DOUBLE:
+			TypedCopyToImpl<double>(nodeP);
+			break;
+		case ComputationNodeDataType::FLOAT:
+			TypedCopyToImpl<float>(nodeP);
+			break;
+		case ComputationNodeDataType::HALF:
+			TypedCopyToImpl<half>(nodeP);
+			break;
+		default:
+			RuntimeError("Type is not supported.");
+		}
+	}
+}
+
+template <class ElemType>
 /*virtual*/ void ReduceElementsNode<ElemType>::Load(File& fstream, size_t modelVersion) /*override*/
 {
     Base::Load(fstream, modelVersion);
@@ -832,6 +855,38 @@ void CropNode<ElemType>::Load(File& fstream, size_t modelVersion)
 
     fstream >> m_xOffset;
     fstream >> m_yOffset;
+}
+
+template <class ElemType>
+template <typename NodeDataType>
+void CropNode<ElemType>::TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+{
+	auto node = dynamic_pointer_cast<CropNode<NodeDataType>>(nodeP);
+	node->m_xOffset = m_xOffset;
+	node->m_yOffset = m_yOffset;
+}
+
+template <class ElemType>
+void CropNode<ElemType>::TypedCopyTo(ComputationNodeBasePtr nodeP, const wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const
+{
+	Base::TypedCopyTo(nodeP, newName, dataType, flags);
+	if (flags & CopyNodeFlags::copyNodeValue)
+	{
+		switch (dataType)
+		{
+		case ComputationNodeDataType::DOUBLE:
+			TypedCopyToImpl<double>(nodeP);
+			break;
+		case ComputationNodeDataType::FLOAT:
+			TypedCopyToImpl<float>(nodeP);
+			break;
+		case ComputationNodeDataType::HALF:
+			TypedCopyToImpl<half>(nodeP);
+			break;
+		default:
+			RuntimeError("Type is not supported.");
+		}
+	}
 }
 
 template <class ElemType>

@@ -65,6 +65,37 @@ template<class ElemType>
 }
 
 template<class ElemType>
+/*virtual*/ void OptimizedRNNStackNode<ElemType>::TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const /*override*/
+{
+	Base::TypedCopyTo(nodeP, newName, dataType, flags);
+	if (flags & CopyNodeFlags::copyNodeValue)
+	{
+		switch (dataType)
+		{
+		case ComputationNodeDataType::DOUBLE:
+			TypedCopyToImpl<double>(nodeP);
+			break;
+		case ComputationNodeDataType::FLOAT:
+			TypedCopyToImpl<float>(nodeP);
+			break;
+		case ComputationNodeDataType::HALF:
+			TypedCopyToImpl<half>(nodeP);
+			break;
+		default:
+			RuntimeError("Type is not supported.");
+		}
+	}
+}
+
+template <class ElemType>
+template <typename NodeDataType>
+void OptimizedRNNStackNode<ElemType>::TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+{
+	auto node = dynamic_pointer_cast<OptimizedRNNStackNode<NodeDataType>>(nodeP);
+	node->m_rnnAttributes = m_rnnAttributes;
+}
+
+template<class ElemType>
 void OptimizedRNNStackNode<ElemType>::Save(File& fstream) const
 {
     Base::Save(fstream);
