@@ -30,6 +30,7 @@ class ClassificationErrorNode : public ComputationNodeNonLooping /*ComputationNo
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ClassificationError"; }
+	template <typename NodeDataType> friend class ClassificationErrorNode;
 
 public:
     DeclareConstructorFromConfig(ClassificationErrorNode);
@@ -177,6 +178,7 @@ class NDCG1EvalNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemT
     {
         return L"NDCG1Eval";
     }
+	template <class NodeDataType> friend class NDCG1EvalNode;
 
 public:
     DeclareConstructorFromConfig(NDCG1EvalNode);
@@ -543,6 +545,7 @@ class EditDistanceErrorNode : public ComputationNodeNonLooping/*ComputationNode*
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"EditDistanceError"; }
+	template <typename NodeDataType> friend class EditDistanceErrorNode;
 
 public:
     // subPen - substitution penalty

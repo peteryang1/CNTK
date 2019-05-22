@@ -176,6 +176,7 @@ class DiagTimesNode : public ComputationNode<ElemType>, public NumInputs<2>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"DiagTimes"; }
+	template <typename NodeDataType> friend class DiagTimesNode;
 
 public:
     DeclareConstructorFromConfigWithNumInputs(DiagTimesNode);

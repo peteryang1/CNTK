@@ -194,6 +194,7 @@ class SoftmaxNodeBase : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base;
     UsingComputationNodeMembers;
+	template <typename NodeDataType> friend class SoftmaxNodeBase;
 
 public:
     // virtual ComputationNodeBase * NewThis(DEVICEID_TYPE deviceId, const wstring & name) = 0;
@@ -317,6 +318,7 @@ class SoftmaxNode : public SoftmaxNodeBase<ElemType>
     {
         return L"Softmax";
     }
+	template <typename NodeDataType> friend class SoftmaxNode;
 
 public:
     DeclareConstructorFromConfigWithNumInputs(SoftmaxNode);
@@ -415,6 +417,7 @@ class LogSoftmaxNode : public SoftmaxNodeBase<ElemType>
     {
         return L"LogSoftmax";
     }
+	template <typename NodeDataType> friend class LogSoftmaxNode;
 
 public:
     DeclareConstructorFromConfigWithNumInputs(LogSoftmaxNode);

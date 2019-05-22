@@ -163,6 +163,7 @@ class MeanInvStdDevNodeBase : public PreComputedNodeBase<ElemType>, public NumIn
 {
     typedef PreComputedNodeBase<ElemType> Base; UsingPreComputedNodeMembers;
     // static const std::wstring TypeName() { return L"MeanInvStdDev (base)"; }
+	template <typename NodeDataType> friend class MeanInvStdDevNodeBase;
 public:
     // DeclareConstructorFromConfigWithNumInputs(MeanInvStdDevNodeBase);
     MeanInvStdDevNodeBase(DEVICEID_TYPE deviceId, const wstring& name)
@@ -325,6 +326,7 @@ class InvStdDevNode : public MeanInvStdDevNodeBase<ElemType>
 {
     typedef MeanInvStdDevNodeBase<ElemType> Base; UsingMeanInvStdDevNodeBaseNodeMembers;
     static const std::wstring TypeName() { return L"InvStdDev"; }
+	template <typename DataNodeType> friend class InvStdDevNode;
 
 public:
     DeclareConstructorFromConfigWithNumInputs(InvStdDevNode);

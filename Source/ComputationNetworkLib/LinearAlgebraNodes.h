@@ -382,7 +382,8 @@ class TimesNodeBase : public ComputationNode<ElemType>, public NumInputs<2>
 {
     friend class ElementTimesNode<ElemType>;
 
-    typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;                                                                                                                           \
+    typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;        
+	template <typename NodeDataType> friend class TimesNodeBase;
 
 public:
     enum : int
@@ -1200,6 +1201,7 @@ class QuantizedTimesNode : public TimesNodeBase<ElemType, false>
     {
         return L"QuantizedTimes";
     }
+	template <class NodeDataType> friend class QuantizedTimesNode;
 
 private:
     // Quantizer bit shift for matrices A and B
@@ -1554,6 +1556,7 @@ class CosDistanceNode : public ComputationNode<ElemType>, public NumInputs<2>
     {
         return L"CosDistance";
     }
+	template <typename NodeDataType> friend class CosDistanceNode;
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CosDistanceNode);
@@ -1782,6 +1785,7 @@ class CosDistanceWithNegativeSamplesNode : public ComputationNode<ElemType>, pub
     {
         return L"CosDistanceWithNegativeSamples";
     }
+	template <typename NodeDataType> friend class CosDistanceWithNegativeSamplesNode;
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CosDistanceWithNegativeSamplesNode);

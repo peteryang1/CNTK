@@ -50,6 +50,7 @@ template <class ElemType>
 class ConvolutionNodeBase : public ComputationNode<ElemType>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;
+	template <typename NodeDataType> friend class ConvolutionNodeBase;
 
 public:
     ConvolutionNodeBase(DEVICEID_TYPE deviceId, const wstring& name)
@@ -363,6 +364,7 @@ class ConvolutionNodeBaseExtended : public ConvolutionNodeBase<ElemType>, public
 {
     typedef ConvolutionNodeBase<ElemType> Base; UsingComputationNodeMembers; 
     UsingConvolutionNodeBaseMembersNonInstantiate;
+	template <typename NodeDataType> friend class ConvolutionNodeBaseExtended;
     
 public:
     ConvolutionNodeBaseExtended(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1056,6 +1058,7 @@ class ROIPoolingNode : public ComputationNode<ElemType>, public NumInputs<2>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ROIPooling"; }
+	template <typename NodeDataType> friend class ROIPoolingNode;
 
 public:
     ROIPoolingNode(DEVICEID_TYPE deviceId, const wstring& name, PoolKind poolKind = PoolKind::Max, const TensorShape& roiOutputShape = TensorShape(), double spatialScale = 1.0/16.0)
@@ -1531,6 +1534,7 @@ class PoolingNodeBase : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base;
     UsingComputationNodeMembers;
+	template <typename NodeDataType> friend class PoolingNodeBase;
 
 public:
     PoolingNodeBase(DEVICEID_TYPE deviceId, const wstring& name, PoolKind poolKind)
