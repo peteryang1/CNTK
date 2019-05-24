@@ -365,7 +365,6 @@ class ConvolutionNodeBaseExtended : public ConvolutionNodeBase<ElemType>, public
     typedef ConvolutionNodeBase<ElemType> Base; UsingComputationNodeMembers; 
     UsingConvolutionNodeBaseMembersNonInstantiate;
 	template <typename NodeDataType> friend class ConvolutionNodeBaseExtended;
-    
 public:
     ConvolutionNodeBaseExtended(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name), m_dilation(TensorShape(1)), m_groups(1)
@@ -465,6 +464,11 @@ public:
             }
         }
     }
+	// DeclareTypedDuplicate(ConvolutionNodeBaseExtended)
+	//ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
+	//{
+	//	NOT_IMPLEMENTED;
+	//}
 
 private:
 	template <typename NodeDataType>
@@ -472,6 +476,7 @@ private:
 	{
 		auto node = dynamic_pointer_cast<ConvolutionNodeBaseExtended<NodeDataType>>(nodeP);
 		node->m_convolution2D = m_convolution2D;
+		node->m_groups = m_groups;
 	}
 
 public:
@@ -504,6 +509,7 @@ public:
         {
             auto node = dynamic_pointer_cast<ConvolutionNodeBaseExtended<ElemType>>(nodeP);
             node->m_convolution2D = m_convolution2D;
+			node->m_groups = m_groups;
         }
     }
 
@@ -560,6 +566,7 @@ class ConvolutionNode : public ConvolutionNodeBaseExtended<ElemType>, public Tra
 {
     typedef ConvolutionNodeBaseExtended<ElemType> Base; UsingConvolutionBaseNodeMembers;
     static const std::wstring TypeName() { return L"Convolution"; }
+	DeclareTypedDuplicate(ConvolutionNode)
 
 public:
     ConvolutionNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -891,6 +898,7 @@ private:
         InputConvolutionMapIdx = 0,
         InputOperandIdx = 1,
     };
+	DeclareTypedDuplicate(ConvolutionSequenceShapeNode)
 
 public:
     static const std::wstring TypeName() { return L"ConvolutionSequenceShape"; }
@@ -1059,6 +1067,7 @@ class ROIPoolingNode : public ComputationNode<ElemType>, public NumInputs<2>
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ROIPooling"; }
 	template <typename NodeDataType> friend class ROIPoolingNode;
+	DeclareTypedDuplicate(ROIPoolingNode)
 
 public:
     ROIPoolingNode(DEVICEID_TYPE deviceId, const wstring& name, PoolKind poolKind = PoolKind::Max, const TensorShape& roiOutputShape = TensorShape(), double spatialScale = 1.0/16.0)
@@ -1288,6 +1297,8 @@ class PoolingNode : public ConvolutionNodeBase<ElemType>, public NumInputs<1>, p
 {
     typedef ConvolutionNodeBase<ElemType> Base; UsingConvolutionNodeBaseMembers;
     static const std::wstring TypeName() { return L"Pooling"; }
+	DeclareTypedDuplicate(PoolingNode)
+
 public:
     PoolingNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -1416,6 +1427,7 @@ class MaxUnpoolingNode : public ConvolutionNodeBase<ElemType>, public NumInputs<
     typedef ConvolutionNodeBase<ElemType> Base;
     UsingConvolutionNodeBaseMembers;
     static const std::wstring TypeName() { return L"MaxUnpooling"; }
+	DeclareTypedDuplicate(MaxUnpoolingNode)
 
 public:
     MaxUnpoolingNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1571,6 +1583,7 @@ public:
         // input, windowWidth, windowHeight, horizontalSubsample, verticalSubsample
         AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
     }
+
 
     void Save(File& fstream) const override
     {
@@ -1806,6 +1819,7 @@ class MaxPoolingNode : public PoolingNodeBase<ElemType>
     {
         return L"MaxPooling";
     }
+	DeclareTypedDuplicate(MaxPoolingNode)
 
 public:
     MaxPoolingNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1846,6 +1860,7 @@ class AveragePoolingNode : public PoolingNodeBase<ElemType>
     {
         return L"AveragePooling";
     }
+	DeclareTypedDuplicate(AveragePoolingNode)
 
 public:
     AveragePoolingNode(DEVICEID_TYPE deviceId, const wstring& name)

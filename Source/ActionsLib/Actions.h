@@ -62,6 +62,8 @@ template <typename ElemType>
 void DoWriteWordAndClassInfo(const ConfigParameters& config);
 template <typename ElemType>
 void DoTopologyPlot(const ConfigParameters& config);
+template <typename ElemType>
+void DoDataTypeConvert(const ConfigParameters& config);
 
 // special purpose (SpecialPurposeActions.cpp)
 template <typename ElemType>

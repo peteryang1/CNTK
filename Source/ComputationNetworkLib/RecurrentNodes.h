@@ -28,6 +28,7 @@ class DelayedValueNodeBase : public ComputationNode<ElemType>, public IRecurrent
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;
     typedef std::shared_ptr<DelayedValueNodeState<ElemType>> DelayedNodeStatePtr;
+	template <typename NodeDataType, int direction> friend class DelayedValueNodeBase;
 
 private:
     TensorView<ElemType> GetMaskTensor(size_t rank, const FrameRange& fr) const;
@@ -76,6 +77,7 @@ public:
     virtual int /*IRecurrentNode::*/ GetRecurrenceSteppingDirection() const override { return -direction; }
     virtual NodeStatePtr /*IStatefulNode::*/ ExportState() override;
     virtual void /*IStatefulNode::*/ ImportState(const NodeStatePtr& pImportedState) override;
+	virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override;
     int TimeStep() const { return m_timeStep; }
     ElemType InitialActivationValue() const { return m_initialStateValue; }
 
@@ -113,6 +115,7 @@ class PastValueNode : public DelayedValueNodeBase<ElemType, -1 /*, MinibatchPack
 {
     typedef DelayedValueNodeBase<ElemType, -1 /*, MinibatchPackingFlags::SequenceStart*/> Base; UsingDelayedValueNodeMembers;
     static const std::wstring TypeName() { return L"PastValue"; }
+	template <typename NodeDataType> friend class PastValueNode;
 
 public:
     PastValueNode(DEVICEID_TYPE deviceId, const wstring& name)

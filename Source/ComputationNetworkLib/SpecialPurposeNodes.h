@@ -35,6 +35,8 @@ class TraceNode : public ComputationNode<ElemType>, public NumInputs<1>
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"Trace"; }
 
+	DeclareTypedDuplicate(TraceNode)
+
 public:
     TraceNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -454,6 +456,8 @@ class SequenceWithSoftmaxNode : public ComputationNodeNonLooping<ElemType>, publ
     {
         return L"SequenceWithSoftmax";
     }
+	template <typename NodeDataType> friend class SequenceWithSoftmaxNode;
+	DeclareTypedDuplicate(SequenceWithSoftmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(SequenceWithSoftmaxNode);
@@ -739,6 +743,8 @@ class LatticeSequenceWithSoftmaxNode : public SequenceWithSoftmaxNode<ElemType>,
     {
         return L"LatticeSequenceWithSoftmax";
     }
+	template <typename NodeDataType> friend class LatticeSequenceWithSoftmaxNode;
+	DeclareTypedDuplicate(LatticeSequenceWithSoftmaxNode)
 
 public:
     LatticeSequenceWithSoftmaxNode(DEVICEID_TYPE deviceId, const std::wstring& name, const std::wstring& symListPath, const std::wstring& phonePath, const std::wstring& stateListPath, const std::wstring& transProbPath, const std::wstring& latticeConfigPath,
@@ -1055,6 +1061,7 @@ class DummyCriterionNode : public ComputationNodeNonLooping /*ComputationNode*/<
     {
         return L"DummyCriterion";
     }
+	DeclareTypedDuplicate(DummyCriterionNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(DummyCriterionNode);
@@ -1138,6 +1145,9 @@ class ForwardBackwardNode : public  ComputationNodeNonLooping<ElemType>, public 
     {
         return L"ForwardBackward";
     }
+	template <typename NodeDataType> friend class ForwardBackwardNode;
+	DeclareTypedDuplicate(ForwardBackwardNode)
+
 public:
     ForwardBackwardNode(DEVICEID_TYPE deviceId, const wstring & name, size_t blankTokenId=SIZE_MAX, int delayConstraint=-1) :
         Base(deviceId, name), m_blankTokenId(blankTokenId), m_delayConstraint(delayConstraint)
@@ -1375,6 +1385,7 @@ class StopGradientNode : public UnaryElementWiseNode<ElemType>
     typedef UnaryElementWiseNode<ElemType> Base; 
     UsingUnaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"StopGradient"; }
+	DeclareTypedDuplicate(StopGradientNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(StopGradientNode);
     StopGradientNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1424,6 +1435,7 @@ class AssignNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType
     static const std::wstring TypeName() { return L"Assign"; }
 
     shared_ptr<Matrix<ElemType>> m_result;
+	DeclareTypedDuplicate(AssignNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(AssignNode);
@@ -1505,6 +1517,7 @@ class OutputMultiplexerNode final : public ComputationNodeNonLooping<ElemType>, 
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"OutputMultiplexer"; }
+	DeclareTypedDuplicate(OutputMultiplexerNode)
 
 public:
     OutputMultiplexerNode(DEVICEID_TYPE deviceId, const wstring& name, size_t outputIndex = 0)
@@ -1561,6 +1574,7 @@ class CustomProxyOpNode : public ComputationNode<ElemType> /* Not deriving from 
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"CustomProxyOpNode"; }
+	DeclareTypedDuplicate(CustomProxyOpNode)
 
 public:
     CustomProxyOpNode(DEVICEID_TYPE deviceId, const wstring& name)

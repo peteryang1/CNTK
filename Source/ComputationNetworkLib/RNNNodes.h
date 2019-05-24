@@ -33,6 +33,8 @@ class OptimizedRNNStackNode : public ComputationNode<ElemType>, public NumInputs
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"OptimizedRNNStack"; }
     using Base::OperationName;
+	template <typename NodeDataType> friend class OptimizedRNNStackNode;
+	DeclareTypedDuplicate(OptimizedRNNStackNode)
 
 public:
     OptimizedRNNStackNode(DEVICEID_TYPE deviceId, const wstring& name);

@@ -48,6 +48,8 @@ class ReshapeNode : public UnaryElementWiseNode<ElemType>
 {
     typedef UnaryElementWiseNode<ElemType> Base; UsingUnaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Reshape"; }
+	template <typename NodeDataType> friend class ReshapeNode;
+	DeclareTypedDuplicate(ReshapeNode)
 
 public:
     ReshapeNode(DEVICEID_TYPE deviceId, const wstring& name, const TensorShape& replacementSampleLayout = TensorShape(), int beginAxis = 1, int endAxis = 0)
@@ -257,6 +259,7 @@ class ReduceElementsNode : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ReduceElements"; }
+	template <typename NodeDataType> friend class ReduceElementsNode;
 
     void ValidateOp();
 
@@ -271,7 +274,7 @@ class ReduceElementsNode : public ComputationNode<ElemType>, public NumInputs<1>
     }
 
 	template <typename NodeDataType>
-	void TypedCopyToImpl(ComptationNodeBasePtr nodeP) const
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
 	{
 		auto node = dynamic_pointer_cast<ReduceElementsNode<NodeDataType>>(nodeP);
 		node->m_axes = m_axes;
@@ -282,6 +285,7 @@ class ReduceElementsNode : public ComputationNode<ElemType>, public NumInputs<1>
 	}
 
 public:
+	DeclareTypedDuplicate(ReduceElementsNode)
     //----------------------------------------------------------------------------
     // For reductions we need the neutral elements of the corresponding binary ops
     //----------------------------------------------------------------------------
@@ -449,6 +453,7 @@ public:
         : Base(deviceId, name)
     {
     }
+	DeclareTypedDuplicate(ReconcileDynamicAxisNode)
 
     virtual void /*ComputationNode::*/ ForwardProp(const FrameRange& fr) override
     {
@@ -582,6 +587,7 @@ class ToBatchAxisNode : public ComputationNodeNonLooping<ElemType>, public NumIn
     static const std::wstring TypeName() {
         return L"ToBatchAxisNode";
     }
+	DeclareTypedDuplicate(ToBatchAxisNode)
 public:
     ToBatchAxisNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -667,6 +673,8 @@ class UnpackBatchAxisNode : public ComputationNodeNonLooping<ElemType>, public N
     static const std::wstring TypeName() {
         return L"UnpackBatchAxis";
     }
+	DeclareTypedDuplicate(UnpackBatchAxisNode)
+
 public:
     UnpackBatchAxisNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -752,6 +760,8 @@ class SliceNode : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"Slice"; }
+	template <typename NodeDataType> friend class SliceNode;
+	DeclareTypedDuplicate(SliceNode)
 
 public:
     SliceNode(DEVICEID_TYPE deviceId, const wstring& name, std::vector<int> beginIndex = {0}, std::vector<int> endIndex = {0}, std::vector<int> axis = {1}, std::vector<int> stride_multiplier = {1})
@@ -955,6 +965,7 @@ class PaddingNode : public ComputationNode<ElemType>, public NumInputs<1>
     {
         return L"Padding";
     }
+	DeclareTypedDuplicate(PaddingNode)
 public:
     
 
@@ -1175,6 +1186,8 @@ class CropNode : public ComputationNode<ElemType>, public TransformerNode
     UsingComputationNodeMembersBoilerplate;
 
     static const std::wstring TypeName() { return L"Crop"; }
+	template <typename NodeDataType> friend class CropNode;
+	DeclareTypedDuplicate(CropNode)
 
 public:
     CropNode(DEVICEID_TYPE deviceId, const std::wstring& name);
@@ -1253,6 +1266,8 @@ class RowStackNode : public ComputationNode<ElemType> // note: not deriving from
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"RowStack"; }
+	template <typename NodeDataType> friend class RowStackNode;
+	DeclareTypedDuplicate(RowStackNode)
 
 public:
     RowStackNode(DEVICEID_TYPE deviceId, const wstring& name, int spliceDim = 1/*TODO: complete this*/)
@@ -1431,6 +1446,8 @@ class RowRepeatNode : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"RowRepeat"; }
+	template <typename NodeDataType> friend class RowRepeatNode;
+	DeclareTypedDuplicate(RowRepeatNode)
 
 public:
     RowRepeatNode(DEVICEID_TYPE deviceId, const wstring& name, size_t numRepeats = 1)
@@ -1572,6 +1589,8 @@ class WhereNode : public ComputationNodeNonLooping<ElemType>, public NumInputs<1
     static const std::wstring TypeName() { return L"Where"; }
 
     static const std::wstring DefaultWhereNodeDynamicAxisName() { return L"WhereNodeAxis"; }
+	DeclareTypedDuplicate(WhereNode)
+
 public:
     DeclareConstructorFromConfigWithNumInputs(WhereNode);
     WhereNode(DEVICEID_TYPE deviceId, const wstring& name, const wstring& dynamicAxisName = DefaultWhereNodeDynamicAxisName()) :
@@ -1631,6 +1650,8 @@ class PackedIndexNode : public ComputationNodeNonLooping<ElemType>, public NumIn
     static const size_t SOURCEDATA = 0;
     static const size_t INDEXDATA  = 1;
 
+	DeclareTypedDuplicate(PackedIndexNode)
+
 public:
     DeclareConstructorFromConfigWithNumInputs(PackedIndexNode);
     PackedIndexNode(DEVICEID_TYPE deviceId, const wstring& name) :
@@ -1663,6 +1684,8 @@ class GatherPackedNode : public ComputationNodeNonLooping<ElemType>, public NumI
     // our inputs
     static const size_t INDEXDATA = 0;
     static const size_t SOURCEDATA = 1;
+
+	DeclareTypedDuplicate(GatherPackedNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(GatherPackedNode);
@@ -1698,6 +1721,7 @@ class ScatterPackedNode : public ComputationNodeNonLooping<ElemType>, public Num
     static const size_t INDEXDATA  = 1;
     static const size_t SOURCEDATA = 2;
 
+	DeclareTypedDuplicate(ScatterPackedNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(ScatterPackedNode);
     ScatterPackedNode(DEVICEID_TYPE deviceId, const wstring& name) :
@@ -1721,6 +1745,7 @@ class DiagonalNode : public ComputationNodeNonLooping<ElemType>, public NumInput
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"Diagonal"; }
+	DeclareTypedDuplicate(DiagonalNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(DiagonalNode);
@@ -1931,6 +1956,7 @@ class LegacyReshapeNode : public ReinterpretNodeBase<ElemType>
     {
         return L"LegacyReshape";
     }
+	template <typename NodeDataType> friend class LegacyReshapeNode;
 
 	template <typename NodeDataType>
 	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
@@ -1939,6 +1965,8 @@ class LegacyReshapeNode : public ReinterpretNodeBase<ElemType>
 		node->m_numTargetRows = m_numTargetRows;
 		node->m_targetImageLayout = m_targetImageLayout;
 	}
+
+	DeclareTypedDuplicate(LegacyReshapeNode)
 
 public:
     LegacyReshapeNode(DEVICEID_TYPE deviceId, const wstring& name, size_t numRows = 0, const TensorShape& imageLayout = TensorShape())
@@ -2230,6 +2258,7 @@ class GatherNode : public ComputationNodeNonLooping<ElemType>, public NumInputs<
     {
         return L"Gather";
     }
+	DeclareTypedDuplicate(GatherNode)
 
 public:
     GatherNode(DEVICEID_TYPE deviceId, const wstring& name) : Base(deviceId, name)

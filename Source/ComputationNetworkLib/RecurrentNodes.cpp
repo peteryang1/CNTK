@@ -52,7 +52,7 @@ void DelayedValueNodeBase<ElemType, direction>::TypedCopyToImpl(ComputationNodeB
 	auto node = dynamic_pointer_cast<DelayedValueNodeBase<NodeDataType, direction /*, SequenceStart_or_End*/>>(nodeP);
 	node->m_timeStep = m_timeStep;
 	node->m_initialStateValue = static_cast<NodeDataType>(m_initialStateValue);
-	node->m_initialStateValueMatrix->CastAssignValuesOf(m_initialStateValue);
+	node->m_initialStateValueMatrix->SetValue(node->m_initialStateValue);
 	node->m_delayedValue->CastAssignValuesOf(*m_delayedValue);
 	if (m_delayedActivationMBLayout)
 		(node->m_delayedActivationMBLayout = make_shared<MBLayout>())->CopyFrom(m_delayedActivationMBLayout);
@@ -81,6 +81,11 @@ template<class ElemType, int direction>
 			RuntimeError("Type is not supported.");
 		}
 	}
+}
+template<class ElemType, int direction>
+ComputationNodeBasePtr DelayedValueNodeBase<ElemType, direction>::TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const /*override*/
+{
+	NOT_IMPLEMENTED;
 }
 
 template<class ElemType, int direction>

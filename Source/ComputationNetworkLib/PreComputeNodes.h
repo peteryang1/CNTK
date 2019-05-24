@@ -30,6 +30,7 @@ class PreComputedNodeBase : public ComputationNodeNonLooping /*ComputationNode*/
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembers;
     using Base::OperationName;
+	template <typename NodeDataType> friend class PreComputedNodeBase;
 
 public:
     PreComputedNodeBase(DEVICEID_TYPE deviceId, const wstring& name)
@@ -273,6 +274,7 @@ class MeanNode : public MeanInvStdDevNodeBase<ElemType>
 {
     typedef MeanInvStdDevNodeBase<ElemType> Base; UsingMeanInvStdDevNodeBaseNodeMembers;
     static const std::wstring TypeName() { return L"Mean"; }
+	DeclareTypedDuplicate(MeanNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(MeanNode);
@@ -327,6 +329,7 @@ class InvStdDevNode : public MeanInvStdDevNodeBase<ElemType>
     typedef MeanInvStdDevNodeBase<ElemType> Base; UsingMeanInvStdDevNodeBaseNodeMembers;
     static const std::wstring TypeName() { return L"InvStdDev"; }
 	template <typename DataNodeType> friend class InvStdDevNode;
+	DeclareTypedDuplicate(InvStdDevNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(InvStdDevNode);
@@ -472,6 +475,7 @@ class PerDimMeanVarDeNormalizationNode : public ComputationNode<ElemType>, publi
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"PerDimMeanVarDeNormalization"; }
 
+	DeclareTypedDuplicate(PerDimMeanVarDeNormalizationNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(PerDimMeanVarDeNormalizationNode);
     PerDimMeanVarDeNormalizationNode(DEVICEID_TYPE deviceId, const wstring& name)

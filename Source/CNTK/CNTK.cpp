@@ -257,6 +257,10 @@ bool DispatchThisAction<half>(const string &thisAction, const ConfigParameters &
 	{
 		DoWriteOutput<half>(commandParams);
 	}
+	else if (thisAction == "convert")
+	{
+		DoDataTypeConvert<half>(commandParams);
+	}
 	else
 	{
 		RuntimeError("half only supported for action train, eval(test) or trainRNN.");

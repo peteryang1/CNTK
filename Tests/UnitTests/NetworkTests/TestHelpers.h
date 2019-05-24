@@ -37,6 +37,11 @@ public:
     {
     }
 
+	virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
+	{
+		NOT_IMPLEMENTED;
+	}
+
     Matrix<ElemType>& GetGradient();
 
     void SetMinibatch(size_t minibatchSize, SmallVector<size_t> sampleDimensions, std::vector<ElemType>& data);

@@ -22,6 +22,7 @@ class SumColumnElementsNode : public ComputationNode<ElemType>, public NumInputs
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"SumColumnElements"; }
+	DeclareTypedDuplicate(SumColumnElementsNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(SumColumnElementsNode);
@@ -79,6 +80,7 @@ class PerDimMeanVarNormalizationNode : public ComputationNode<ElemType>, public 
     {
         return L"PerDimMeanVarNormalization";
     }
+	DeclareTypedDuplicate(PerDimMeanVarNormalizationNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(PerDimMeanVarNormalizationNode);
@@ -177,6 +179,7 @@ class DiagTimesNode : public ComputationNode<ElemType>, public NumInputs<2>
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"DiagTimes"; }
 	template <typename NodeDataType> friend class DiagTimesNode;
+	DeclareTypedDuplicate(DiagTimesNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(DiagTimesNode);

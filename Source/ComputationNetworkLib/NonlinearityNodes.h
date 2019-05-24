@@ -146,6 +146,7 @@ public:
         }                                                                                                                                    \
                                                                                                                                              \
     public:                                                                                                                                  \
+		DeclareTypedDuplicate(Name##Node)                                                                                       \
         DeclareConstructorFromConfigWithNumInputs(Name##Node);                                                                               \
         Name##Node(DEVICEID_TYPE deviceId, const wstring& Name) :                                                                            \
             Base(deviceId, Name)                                                                                                             \
@@ -319,6 +320,7 @@ class SoftmaxNode : public SoftmaxNodeBase<ElemType>
         return L"Softmax";
     }
 	template <typename NodeDataType> friend class SoftmaxNode;
+	DeclareTypedDuplicate(SoftmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(SoftmaxNode);
@@ -418,6 +420,7 @@ class LogSoftmaxNode : public SoftmaxNodeBase<ElemType>
         return L"LogSoftmax";
     }
 	template <typename NodeDataType> friend class LogSoftmaxNode;
+	DeclareTypedDuplicate(LogSoftmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(LogSoftmaxNode);
@@ -517,6 +520,7 @@ class HardmaxNode : public SoftmaxNodeBase /*ComputationNode*/<ElemType>
     {
         return L"Hardmax";
     }
+	DeclareTypedDuplicate(HardmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(HardmaxNode);
@@ -554,6 +558,8 @@ class TopKNode : public ComputationNode<ElemType>, public MultiOutputNode<ElemTy
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"TopK"; }
+
+	DeclareTypedDuplicate(TopKNode)
 
 public:
     TopKNode(DEVICEID_TYPE deviceId, const wstring& name) : Base(deviceId, name), MultiOutputNode<ElemType>(2) {}
@@ -672,6 +678,7 @@ class IfNode : public ComputationNode<ElemType>, public NumInputs<3>
     }
 
 public:
+	DeclareTypedDuplicate(IfNode)
     DeclareConstructorFromConfigWithNumInputs(IfNode);
     IfNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -749,6 +756,7 @@ class ClipNode : public ComputationNode<ElemType>, public NumInputs<3>
     {
         return L"Clip";
     }
+	DeclareTypedDuplicate(ClipNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(ClipNode);
@@ -817,6 +825,7 @@ private:
     static_assert(5 == ElementWiseOperator::opLessEqual     - ElementWiseOperator::opLess, "ElementWiseOperator::opLessEqual has wrong value relative to ElementWiseOperator::opLess");
 
 public:
+	
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
 
     static const std::wstring TypeName()
@@ -830,6 +839,11 @@ public:
         : Base(deviceId, name)
     {
     }
+
+	ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const /*override*/
+	{
+		NOT_IMPLEMENTED;
+	}
 
     virtual bool InputUsedInComputingInputNodesGradients(size_t childIndex)  const override { return childIndex == 0; }
     virtual bool OutputUsedInComputingInputNodesGradients() const override { return false; }

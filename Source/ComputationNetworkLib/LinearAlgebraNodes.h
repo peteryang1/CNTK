@@ -34,7 +34,7 @@ class PlusNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Plus"; }
-
+	DeclareTypedDuplicate(PlusNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(PlusNode);
     PlusNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -104,7 +104,7 @@ class LogPlusNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"LogPlus"; }
-
+	DeclareTypedDuplicate(LogPlusNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(LogPlusNode);
     LogPlusNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -179,7 +179,7 @@ class PowNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Pow"; }
-
+	DeclareTypedDuplicate(PowNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(PowNode);
     PowNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -239,7 +239,7 @@ class MinusNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Minus"; }
-
+	DeclareTypedDuplicate(MinusNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(MinusNode);
     MinusNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -307,7 +307,7 @@ class ElementTimesNode : public BinaryElementWiseNode<ElemType>
     {
         return L"ElementTimes";
     }
-
+	DeclareTypedDuplicate(ElementTimesNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(ElementTimesNode);
     ElementTimesNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -383,8 +383,7 @@ class TimesNodeBase : public ComputationNode<ElemType>, public NumInputs<2>
     friend class ElementTimesNode<ElemType>;
 
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;        
-	template <typename NodeDataType> friend class TimesNodeBase;
-
+	template <typename NodeDataType, bool m_transpose> friend class TimesNodeBase;
 public:
     enum : int
     {
@@ -419,6 +418,7 @@ public:
 			}
 		}
 	}
+
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1134,7 +1134,7 @@ class TimesNode : public TimesNodeBase<ElemType, false>
     typedef TimesNodeBase<ElemType, false> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"Times"; }
-
+	DeclareTypedDuplicate(TimesNode)
 public:
     TimesNode(DEVICEID_TYPE deviceId, const wstring& name, size_t outputRank = 1, int inferInputRankToMap = Base::NoInferredInputRank)
         : Base(deviceId, name, outputRank, inferInputRankToMap)
@@ -1166,7 +1166,7 @@ class TransposeTimesNode : public TimesNodeBase<ElemType, true>
     typedef TimesNodeBase<ElemType, true> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"TransposeTimes"; }
-
+	DeclareTypedDuplicate(TransposeTimesNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(TransposeTimesNode);
     TransposeTimesNode(DEVICEID_TYPE deviceId, const wstring& name, size_t outputRank = 1)
@@ -1202,6 +1202,7 @@ class QuantizedTimesNode : public TimesNodeBase<ElemType, false>
         return L"QuantizedTimes";
     }
 	template <class NodeDataType> friend class QuantizedTimesNode;
+	DeclareTypedDuplicate(QuantizedTimesNode)
 
 private:
     // Quantizer bit shift for matrices A and B
@@ -1324,7 +1325,7 @@ class SumElementsNode : public ComputationNodeNonLooping /*ComputationNode*/<Ele
     {
         return L"SumElements";
     }
-
+	DeclareTypedDuplicate(SumElementsNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(SumElementsNode);
     SumElementsNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1372,6 +1373,7 @@ class TransposeDimensionsNode : public ComputationNode /*ComputationNode*/<ElemT
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"TransposeDimensions"; }
+	DeclareTypedDuplicate(TransposeDimensionsNode)
 
 public:
     TransposeDimensionsNode(DEVICEID_TYPE deviceId, const wstring& name, int axis1 = 1, int axis2 = 2)
@@ -1557,6 +1559,7 @@ class CosDistanceNode : public ComputationNode<ElemType>, public NumInputs<2>
         return L"CosDistance";
     }
 	template <typename NodeDataType> friend class CosDistanceNode;
+	DeclareTypedDuplicate(CosDistanceNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CosDistanceNode);
@@ -1709,6 +1712,7 @@ class KhatriRaoProductNode : public ComputationNode<ElemType>, public NumInputs<
     {
         return L"KhatriRaoProduct";
     }
+	DeclareTypedDuplicate(KhatriRaoProductNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(KhatriRaoProductNode);
@@ -1786,6 +1790,7 @@ class CosDistanceWithNegativeSamplesNode : public ComputationNode<ElemType>, pub
         return L"CosDistanceWithNegativeSamples";
     }
 	template <typename NodeDataType> friend class CosDistanceWithNegativeSamplesNode;
+	DeclareTypedDuplicate(CosDistanceWithNegativeSamplesNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CosDistanceWithNegativeSamplesNode);
@@ -2089,6 +2094,8 @@ class EpochAccumulatorNode : public ComputationNodeNonLooping<ElemType>, public 
     typedef ComputationNodeNonLooping<ElemType> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"EpochAccumulator"; }
+	template <typename NodeDataType> friend class EpochAccumulatorNode;
+	DeclareTypedDuplicate(EpochAccumulatorNode)
 
 public:
     EpochAccumulatorNode(DEVICEID_TYPE deviceId, const wstring& name);
@@ -2150,11 +2157,21 @@ class CastNode : public UnaryElementWiseNode<ElemType>
     static const std::wstring TypeName() { return L"Cast"; }
 
 public:
-	DeclareConstructorFromConfig(CastNode);
     CastNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
     {
     }
+
+	CastNode(const ScriptableObjects::IConfigRecordPtr configp)
+		: CastNode(configp->Get(L"deviceId"), L"<placeholder>")
+	{
+		AttachInputsFromConfig(configp, 1);
+	}
+
+	ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
+	{
+		NOT_IMPLEMENTED;
+	}
 
     virtual void /*ComputationNode::*/ ForwardProp(const FrameRange& fr) override
     {

@@ -63,6 +63,46 @@ ComputationNodeBasePtr ComputationNetwork::CopyNode(const ComputationNetwork& fr
     return pToNode;
 }
 
+ComputationNodeBasePtr ComputationNetwork::TypedCopyNode(const ComputationNetwork& fromNet,
+	const std::wstring fromName,
+	std::wstring toName,
+	const ComputationNodeDataType dataType,
+	const CopyNodeFlags flags)
+{
+	InvalidateCompiledNetwork();
+
+	if (toName == L"")
+		toName = fromName;
+
+	ComputationNodeBasePtr pFromNode = fromNet.GetNodeFromName(fromName);
+	ComputationNodeBasePtr pToNode;
+
+	// don't allow cross network child copy unless caller explicitly handles children fixup
+	if ((flags & CopyNodeFlags::copyNodeInputLinks) &&
+		this != &fromNet && !(flags & CopyNodeFlags::copyNodeAcrossNetworks))
+	{
+		LogicError("TypedCopyNode: Copying node children across network is invalid.");
+	}
+
+	if (!NodeNameExists(toName))
+	{
+		pToNode = pFromNode->TypedDuplicate(dataType, toName, flags);
+		AddNodeToNet(pToNode);
+	}
+	else
+	{
+		// node already exists
+		pToNode = GetNodeFromName(toName);
+
+		// same node. no copy needed
+		if (pFromNode == pToNode)
+			LogicError("TypedCopyNode: You are copying the node to the same network with same node name.");
+		else
+			pFromNode->TypedCopyTo(pToNode, toName, dataType, flags); // blast it over the existing node
+	}
+	return pToNode;
+}
+
 // only copy a complete independent tree
 // when node name exists
 void ComputationNetwork::CopySubTree(const ComputationNetwork& fromNet,

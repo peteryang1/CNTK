@@ -31,6 +31,7 @@ class ClassificationErrorNode : public ComputationNodeNonLooping /*ComputationNo
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ClassificationError"; }
 	template <typename NodeDataType> friend class ClassificationErrorNode;
+	DeclareTypedDuplicate(ClassificationErrorNode)
 
 public:
     DeclareConstructorFromConfig(ClassificationErrorNode);
@@ -151,9 +152,12 @@ private:
 	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
 	{
 		auto node = dynamic_pointer_cast<ClassificationErrorNode<NodeDataType>>(nodeP);
-		node->m_maxIndexes0->CastAssignValuesOf(*m_maxIndexes0);
-		node->m_maxIndexes1->CastAssignValuesOf(*m_maxIndexes1);
-		node->m_maxValues->CastAssignValuesOf(*m_maxValues);
+		if (m_maxIndexes0)
+			node->m_maxIndexes0->CastAssignValuesOf(*m_maxIndexes0);
+		if (m_maxIndexes1)
+			node->m_maxIndexes1->CastAssignValuesOf(*m_maxIndexes1);
+		if (m_maxValues)
+			node->m_maxValues->CastAssignValuesOf(*m_maxValues);
 	}
 
     shared_ptr<Matrix<ElemType>> m_maxIndexes0, m_maxIndexes1;
@@ -179,6 +183,7 @@ class NDCG1EvalNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemT
         return L"NDCG1Eval";
     }
 	template <class NodeDataType> friend class NDCG1EvalNode;
+	DeclareTypedDuplicate(NDCG1EvalNode)
 
 public:
     DeclareConstructorFromConfig(NDCG1EvalNode);
@@ -427,8 +432,8 @@ protected:
 		node->m_urlDiscount0->CastAssignValuesOf(*m_urlDiscount0);
 		node->m_urlDiscount1->CastAssignValuesOf(*m_urlDiscount1);
 
-		node->m_queryUrls = m_queryUrls;
-		node->m_urlSorter = m_urlSorter;
+		// node->m_queryUrls = m_queryUrls;
+		// node->m_urlSorter = m_urlSorter;
 
 		node->m_logWeights.reserve(m_logWeights.size());
 		for (size_t i = 0; i < m_logWeights.size(); ++i)
@@ -546,6 +551,7 @@ class EditDistanceErrorNode : public ComputationNodeNonLooping/*ComputationNode*
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"EditDistanceError"; }
 	template <typename NodeDataType> friend class EditDistanceErrorNode;
+	DeclareTypedDuplicate(EditDistanceErrorNode)
 
 public:
     // subPen - substitution penalty
@@ -816,9 +822,9 @@ private:
 	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
 	{
 		auto node = dynamic_pointer_cast<EditDistanceErrorNode<NodeDataType>>(nodeP);
-		node->m_maxIndexes0->CastAssignValuesOf(m_maxIndexes0);
-		node->m_maxIndexes1->CastAssignValuesOf(m_maxIndexes1)
-			node->m_maxValues->CastAssignValuesOf(m_maxValues);
+		node->m_maxIndexes0->CastAssignValuesOf(*m_maxIndexes0);
+		node->m_maxIndexes1->CastAssignValuesOf(*m_maxIndexes1);
+			node->m_maxValues->CastAssignValuesOf(*m_maxValues);
 		node->m_squashInputs = m_squashInputs;
 		node->m_subPen = m_subPen;
 		node->m_delPen = m_delPen;
@@ -885,6 +891,7 @@ class OneHotNode : public ComputationNodeNonLooping<ElemType>, public NumInputs<
     {
         return L"OneHot";
     }
+	DeclareTypedDuplicate(OneHotNode)
 
 public:
     OneHotNode(DEVICEID_TYPE deviceId, size_t num_class, bool is_sparse, int axis, const wstring& name) : Base(deviceId, name)

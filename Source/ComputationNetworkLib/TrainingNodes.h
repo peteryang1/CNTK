@@ -42,6 +42,8 @@ class MarginInnerProductNode : public ComputationNodeNonLooping /*ComputationNod
     {
         return L"MarginInnerProduct";
     }
+	template <typename NodeDataType> friend class MarginInnerProductNode;
+	DeclareTypedDuplicate(MarginInnerProductNode)
 
 public:
     MarginInnerProductNode(const ScriptableObjects::IConfigRecordPtr configp)
@@ -295,7 +297,7 @@ private:
 			break;
 		case 2:
 		{
-			node->m_cosThetaQuadratic->SetVaCastAssignValuesOflue(*m_cosThetaQuadratic);
+			node->m_cosThetaQuadratic->CastAssignValuesOf(*m_cosThetaQuadratic);
 			node->m_sign0->CastAssignValuesOf(*m_sign0);
 			break;
 		}
@@ -531,6 +533,8 @@ class FeatureNormalizeNode : public ComputationNodeNonLooping /*ComputationNode*
     {
         return L"FeatureNormalize";
     }
+	template <typename NodeDataType> friend class FeatureNormalizeNode;
+	DeclareTypedDuplicate(FeatureNormalizeNode)
 
 public:
     FeatureNormalizeNode(const ScriptableObjects::IConfigRecordPtr configp)
@@ -622,9 +626,20 @@ private:
 	{
 		auto node = dynamic_pointer_cast<FeatureNormalizeNode<NodeDataType>>(nodeP);
 		node->m_normalizeType = m_normalizeType;
-		node->m_magnitude->CastAssignValuesOf(*m_magnitude);
-		node->m_temp1->CastAssignValuesOf(*m_temp1);
-		node->m_temp2->CastAssignValuesOf(*m_temp2);
+		if (m_magnitude)
+			node->m_magnitude->CastAssignValuesOf(*m_magnitude);
+		else
+			node->m_magnitude = nullptr;
+		
+		if (m_temp1)
+			node->m_temp1->CastAssignValuesOf(*m_temp1);
+		else
+			node->m_temp1 = nullptr;
+
+		if (m_temp2)
+			node->m_temp2->CastAssignValuesOf(*m_temp2);
+		else
+			node->m_temp2 = nullptr;
 	}
 
 public:
@@ -717,6 +732,9 @@ class AdditiveFullConnectionNode : public ComputationNodeNonLooping /*Computatio
         return L"AdditiveFullConnection";
     }
 
+	template <typename NodeDataType> friend class AdditiveFullConnectionNode;
+	DeclareTypedDuplicate(AdditiveFullConnectionNode)
+
 private:
 	template <typename NodeDataType>
 	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
@@ -734,7 +752,10 @@ private:
 		node->m_biasMax = m_biasMax;
 		node->m_iter = m_iter;
 
-		node->m_label->CastAssignValuesOf(*m_label);
+		if (m_label)
+			node->m_label->CastAssignValuesOf(*m_label);
+		else
+			node->m_label = nullptr;
 	}
 
 public:
@@ -950,6 +971,8 @@ class CenterLossNode : public ComputationNodeNonLooping /*ComputationNode*/<Elem
     typedef ComputationNodeNonLooping<ElemType> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"CenterLoss"; }
+	template <typename NodeDataType> friend class CenterLossNode;
+	DeclareTypedDuplicate(CenterLossNode)
 
 public:
     CenterLossNode(const ScriptableObjects::IConfigRecordPtr configp) :
@@ -1158,6 +1181,8 @@ class ChannelMultiplyNode : public ComputationNodeNonLooping /*ComputationNode*/
     {
         return L"ChannelMultiply";
     }
+	template <typename NodeDataType> friend class ChannelMultiplyNode;
+	DeclareTypedDuplicate(ChannelMultiplyNode)
 
 public:
     ChannelMultiplyNode(const ScriptableObjects::IConfigRecordPtr configp)
@@ -1333,6 +1358,8 @@ class SquareErrorNode : public ComputationNodeNonLooping /*ComputationNode*/<Ele
     {
         return L"SquareError";
     }
+	template <typename NodeDataType> friend class SquareErrorNode;
+	DeclareTypedDuplicate(SquareErrorNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(SquareErrorNode);
@@ -1456,6 +1483,8 @@ class CrossEntropyWithSoftmaxNode : public ComputationNodeNonLooping /*Computati
     {
         return L"CrossEntropyWithSoftmax";
     }
+	template <typename NodeDataType> friend class CrossEntropyWithSoftmaxNode;
+	DeclareTypedDuplicate(CrossEntropyWithSoftmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CrossEntropyWithSoftmaxNode);
@@ -1595,8 +1624,10 @@ protected:
 	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
 	{
 		auto node = dynamic_pointer_cast<CrossEntropyWithSoftmaxNode<NodeDataType>>(nodeP);
-		node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
-		node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
+		if (m_logSoftmaxOfRight)
+			node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
+		if (m_softmaxOfRight)
+			node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
 	}
 
 protected:
@@ -1624,6 +1655,8 @@ class CrossEntropyNode : public ComputationNodeNonLooping /*ComputationNode*/<El
     {
         return L"CrossEntropy";
     }
+	template <typename NodeDataType> friend class CrossEntropyNode;
+	DeclareTypedDuplicate(CrossEntropyNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CrossEntropyNode);
@@ -1787,6 +1820,8 @@ class MatrixL1RegNode : public ComputationNodeNonLooping /*ComputationNode*/<Ele
     {
         return L"MatrixL1Reg";
     }
+	template <typename NodeDataType> friend class MatrixL1RegNode;
+	DeclareTypedDuplicate(MatrixL1RegNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(MatrixL1RegNode);
@@ -1911,6 +1946,8 @@ class LambdaRankNode : public ComputationNodeNonLooping /*ComputationNode*/<Elem
     {
         return L"LambdaRank";
     }
+	template <typename NodeDataType> friend class LambdaRankNode;
+	DeclareTypedDuplicate(LambdaRankNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(LambdaRankNode);
@@ -2194,9 +2231,9 @@ private:
 		node->m_urlDiscount0->CastAssignValuesOf(*m_urlDiscount0);
 		node->m_urlDiscount1->CastAssignValuesOf(*m_urlDiscount1);
 
-		node->m_queryUrls = m_queryUrls;
-		node->m_urlSorter = m_urlSorter;
-		node->m_logWeights = m_logWeights;
+		//node->m_queryUrls = m_queryUrls;
+		//node->m_urlSorter = m_urlSorter;
+		//node->m_logWeights = m_logWeights;
 	}
 
 public:
@@ -2414,6 +2451,7 @@ class MatrixL2RegNode : public ComputationNodeNonLooping /*ComputationNode*/<Ele
     {
         return L"MatrixL2Reg";
     }
+	DeclareTypedDuplicate(MatrixL2RegNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(MatrixL2RegNode);
@@ -2482,6 +2520,7 @@ class NoiseContrastiveEstimationNode : public ComputationNodeNonLooping /*Comput
     {
         return L"NCEBasedCrossEntropyWithSoftmax";
     }
+	DeclareTypedDuplicate(NoiseContrastiveEstimationNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(NoiseContrastiveEstimationNode);
@@ -2755,6 +2794,7 @@ class RandomDistributionNode : public ComputationNode<ElemType>, public RngUser
         else
             InvalidArgument("GetRandomDistributionType: Unknown random distribution type '%ls'", rvType.c_str());
     }
+	DeclareTypedDuplicate(RandomDistributionNode)
 
 public:
     RandomDistributionNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -2831,6 +2871,7 @@ class RandomSampleNodeBase : public ComputationNodeNonLooping<ElemType>, public 
     {
         return L"RandomSampleNodeBase";
     }
+	template <typename NodeDataType> friend class RandomSampleNodeBase;
 
 public:
     RandomSampleNodeBase(DEVICEID_TYPE deviceId, const wstring& name, size_t sizeOfSampledSet = 0, bool allowDuplicates = false)
@@ -2844,6 +2885,11 @@ public:
     {
         AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
     }
+
+	ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
+	{
+		NOT_IMPLEMENTED;
+	}
 
 	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override;
@@ -2953,6 +2999,7 @@ class RandomSampleInclusionFrequencyNode : public RandomSampleNodeBase<ElemType>
     {
         return L"RandomSampleInclusionFrequency";
     }
+	DeclareTypedDuplicate(RandomSampleInclusionFrequencyNode)
 
 public:
     RandomSampleInclusionFrequencyNode(DEVICEID_TYPE deviceId, const wstring& name, size_t sizeOfSampledSet = 0, bool allowDuplicates = false)
@@ -3006,6 +3053,8 @@ class ClassBasedCrossEntropyWithSoftmaxNode : public ComputationNodeNonLooping /
     static const size_t INPUTDATA = 1;
     static const size_t EMBEDDINGMATRIX = 2;
     static const size_t CLASSPROBINDATA = 3;
+
+	DeclareTypedDuplicate(ClassBasedCrossEntropyWithSoftmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(ClassBasedCrossEntropyWithSoftmaxNode);
@@ -3560,6 +3609,8 @@ class LogisticNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemTy
     {
         return L"Logistic";
     }
+	template <typename NodeDataType> friend class LogisticNode;
+	DeclareTypedDuplicate(LogisticNode)
 
 public:
     DeclareConstructorFromConfig(LogisticNode);
@@ -3794,6 +3845,8 @@ class DropoutNode : public ComputationNode<ElemType>, public NumInputs<1>, publi
     {
         return L"Dropout";
     }
+	template <typename NodeDataType> friend class DropoutNode;
+	DeclareTypedDuplicate(DropoutNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(DropoutNode);
@@ -3932,7 +3985,7 @@ private:
 		auto node = dynamic_pointer_cast<DropoutNode<NodeDataType>>(nodeP);
 		node->SetDropoutRate(GetDropoutRate());
 		node->SetRngState(GetRngSeed(), GetRngOffset());
-		node->m_maskOfDropout = m_maskOfDropout;
+		node->m_maskOfDropout->CastAssignValuesOf(*m_maskOfDropout);
 	}
 
 private:
@@ -4031,6 +4084,8 @@ class GlobalConcatNode : public ComputationNodeNonLooping /*ComputationNode*/<El
     {
         return L"GlobalConcat";
     }
+	template <typename NodeDataType> friend class GlobalConcatNode;
+	DeclareTypedDuplicate(GlobalConcatNode)
 
 public:
     GlobalConcatNode(const ScriptableObjects::IConfigRecordPtr configp)
@@ -4294,6 +4349,8 @@ class BatchNormalizationNode : public ComputationNodeNonLooping<ElemType>, publi
 
 	typedef typename std::conditional<std::is_same<ElemType, half>::value, float, ElemType>::type StatType;
 
+	template <typename NodeDataType> friend class BatchNormalizationNode;
+
     // inputs
     // TODO: Change all of these throughout the codebase to 'class enum'. Also change all places where we still use integer constants.
     static const size_t DATA = 0;
@@ -4302,6 +4359,8 @@ class BatchNormalizationNode : public ComputationNodeNonLooping<ElemType>, publi
     static const size_t RUN_MEAN = 3;
     static const size_t RUN_VAR = 4;
     static const size_t RUN_COUNT = 5; // note: no such parameter for legacy V1 models that do not share the count correctly
+
+	DeclareTypedDuplicate(BatchNormalizationNode)
 public:
     BatchNormalizationNode(DEVICEID_TYPE deviceId, const wstring& name, bool spatial = false,
                            double normalizationTimeConstant = 0, double blendTimeConstant = 0,
