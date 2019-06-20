@@ -574,7 +574,7 @@ template void DoTopologyPlot<double>(const ConfigParameters& config);
 template <typename ElemType>
 void DoDataTypeConvert(const ConfigParameters& config)
 {
-	wstring sourceModelPath = config(L"soureModelPath"); // Path to model for conversion.
+	wstring sourceModelPath = config(L"sourceModelPath"); // Path to model for conversion.
 	wstring targetModelPath = config(L"targetModelPath", sourceModelPath + L"_conversion"); // Path to result model
 	wstring targetPrecision = config(L"targetPrecision", L"float"); // Target model precision
 	DEVICEID_TYPE deviceId = config(L"deviceId", 0); // use GPU for conversion, because FP16 convolution is only supported via cuDNN.
