@@ -126,12 +126,12 @@ public:
         return net;
     }
 
-    void Save(const std::wstring& fileName, const FileOptions fileFormat = FileOptions::fileOptionsBinary) const;
+    void Save(const std::wstring& fileName, const FileOptions fileFormat = FileOptions::fileOptionsBinary, const size_t modelVersion=CURRENT_CNTK_MODEL_VERSION) const;
     void SaveEdited(const std::wstring& fileName, const FileOptions fileFormat = FileOptions::fileOptionsBinary);
 
 private:
 
-    void SaveToFileImpl(const std::wstring& fileName, const FileOptions fileFormat) const;
+    void SaveToFileImpl(const std::wstring& fileName, const FileOptions fileFormat, const size_t modelVersion=CURRENT_CNTK_MODEL_VERSION) const;
     
     static size_t GetModelVersion(File& fstream);
 

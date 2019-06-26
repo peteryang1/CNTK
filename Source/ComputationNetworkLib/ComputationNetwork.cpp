@@ -110,18 +110,18 @@ void ComputationNetwork::SaveEdited(const wstring& fileName, const FileOptions f
     Save(fileName, fileFormat);
 }
 
-void ComputationNetwork::Save(const wstring& fileName, const FileOptions fileFormat) const
+void ComputationNetwork::Save(const wstring& fileName, const FileOptions fileFormat, const size_t modelVersion) const
 {
     VerifyIsCompiled("Save");
     // Saving into temporary file and then renaming it to the requested fileName
     // This is a standard trick to avoid having corrupted model files if process dies during writing
     wstring tmpFileName = fileName + L".tmp";
-    SaveToFileImpl(tmpFileName, fileFormat);
+    SaveToFileImpl(tmpFileName, fileFormat, modelVersion);
     renameOrDie(tmpFileName, fileName);
 }
 
 // TODO: how does the file distinguish float vs double nodes?
-void ComputationNetwork::SaveToFileImpl(const wstring& fileName, const FileOptions fileFormat) const
+void ComputationNetwork::SaveToFileImpl(const wstring& fileName, const FileOptions fileFormat, const size_t modelVersion) const
 {
     File fstream(fileName, fileFormat | FileOptions::fileOptionsWrite);
     // Buffer writes in memory then flush to filesystem, which reduces number of small writes
@@ -130,7 +130,7 @@ void ComputationNetwork::SaveToFileImpl(const wstring& fileName, const FileOptio
 
     // model version
     fstream.PutMarker(FileMarker::fileMarkerBeginSection, L"BVersion");
-    fstream << (size_t) CURRENT_CNTK_MODEL_VERSION;
+    fstream << modelVersion;
     fstream.PutMarker(FileMarker::fileMarkerEndSection, L"EVersion");
 
     fstream << (size_t) m_nameToNodeMap.size();

@@ -578,6 +578,7 @@ void DoDataTypeConvert(const ConfigParameters& config)
 	wstring targetModelPath = config(L"targetModelPath", sourceModelPath + L"_conversion"); // Path to result model
 	wstring targetPrecision = config(L"targetPrecision", L"float"); // Target model precision
 	DEVICEID_TYPE deviceId = config(L"deviceId", 0); // use GPU for conversion, because FP16 convolution is only supported via cuDNN.
+	size_t targetModelVersion = config(L"targetModelVersion", CURRENT_CNTK_MODEL_VERSION);
 
 	ComputationNetworkPtr sourceNetworkPtr = ComputationNetwork::CreateFromFile<ElemType>(deviceId, sourceModelPath);
 	ComputationNetworkPtr targetNetworkPtr = make_shared<ComputationNetwork>(deviceId);
@@ -662,7 +663,7 @@ void DoDataTypeConvert(const ConfigParameters& config)
 
 	// save to FS
 	fprintf(stderr, "\nSave converted model to %ls\n", targetModelPath.c_str());
-	targetNetworkPtr->Save(targetModelPath);
+	targetNetworkPtr->Save(targetModelPath, FileOptions::fileOptionsBinary, targetModelVersion);
 }
 
 template void DoDataTypeConvert<half>(const ConfigParameters& config);
