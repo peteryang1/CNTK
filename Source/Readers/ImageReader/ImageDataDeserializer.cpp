@@ -80,8 +80,8 @@ ImageDataDeserializer::ImageDataDeserializer(const ConfigParameters& config)
     m_verbosity = config(L"verbosity", 0);
 
     string precision = (ConfigValue)config("precision", "float");
-	if (AreEqualIgnoreCase(precision, "half") || AreEqualIgnoreCase(precision, "float16"))
-		precision = "float";
+    if (AreEqualIgnoreCase(precision, "half") || AreEqualIgnoreCase(precision, "float16"))
+        precision = "float";
     m_precision = AreEqualIgnoreCase(precision, "float") ? DataType::Float : DataType::Double;
 
     // Expect data in HWC.

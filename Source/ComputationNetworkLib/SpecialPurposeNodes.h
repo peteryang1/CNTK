@@ -35,7 +35,7 @@ class TraceNode : public ComputationNode<ElemType>, public NumInputs<1>
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"Trace"; }
 
-	DeclareTypedDuplicate(TraceNode)
+    DeclareTypedDuplicate(TraceNode)
 
 public:
     TraceNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -456,8 +456,8 @@ class SequenceWithSoftmaxNode : public ComputationNodeNonLooping<ElemType>, publ
     {
         return L"SequenceWithSoftmax";
     }
-	template <typename NodeDataType> friend class SequenceWithSoftmaxNode;
-	DeclareTypedDuplicate(SequenceWithSoftmaxNode)
+    template <typename NodeDataType> friend class SequenceWithSoftmaxNode;
+    DeclareTypedDuplicate(SequenceWithSoftmaxNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(SequenceWithSoftmaxNode);
@@ -601,27 +601,27 @@ public:
         m_partialtime = 0;
     }
 
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -687,18 +687,18 @@ public:
     }
 
 protected:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<SequenceWithSoftmaxNode<NodeDataType>>(nodeP);
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<SequenceWithSoftmaxNode<NodeDataType>>(nodeP);
 
-		node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
-		node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
-		node->m_gammaFromLattice->CastAssignValuesOf(*m_gammaFromLattice);
-		node->m_fsSmoothingWeight = m_fsSmoothingWeight;
-		node->m_frameDropThreshold = m_frameDropThreshold;
-		node->m_doReferenceAlignment = m_doReferenceAlignment;
-	}
+        node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
+        node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
+        node->m_gammaFromLattice->CastAssignValuesOf(*m_gammaFromLattice);
+        node->m_fsSmoothingWeight = m_fsSmoothingWeight;
+        node->m_frameDropThreshold = m_frameDropThreshold;
+        node->m_doReferenceAlignment = m_doReferenceAlignment;
+    }
 
 protected:
     shared_ptr<Matrix<ElemType>> m_logSoftmaxOfRight;
@@ -743,8 +743,8 @@ class LatticeSequenceWithSoftmaxNode : public SequenceWithSoftmaxNode<ElemType>,
     {
         return L"LatticeSequenceWithSoftmax";
     }
-	template <typename NodeDataType> friend class LatticeSequenceWithSoftmaxNode;
-	DeclareTypedDuplicate(LatticeSequenceWithSoftmaxNode)
+    template <typename NodeDataType> friend class LatticeSequenceWithSoftmaxNode;
+    DeclareTypedDuplicate(LatticeSequenceWithSoftmaxNode)
 
 public:
     LatticeSequenceWithSoftmaxNode(DEVICEID_TYPE deviceId, const std::wstring& name, const std::wstring& symListPath, const std::wstring& phonePath, const std::wstring& stateListPath, const std::wstring& transProbPath, const std::wstring& latticeConfigPath,
@@ -952,27 +952,27 @@ public:
         }
     }
 
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1018,20 +1018,20 @@ private:
         msra::lattices::archive::GetSymList(m_idmap, symListPath, symmap);
     }
 
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<LatticeSequenceWithSoftmaxNode<NodeDataType>>(nodeP);
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<LatticeSequenceWithSoftmaxNode<NodeDataType>>(nodeP);
 
-		if (node)
-		{
-			node->m_idmap = m_idmap;
-			node->m_symListPath = m_symListPath;
-			node->m_phonePath = m_phonePath;
-			node->m_stateListPath = m_stateListPath;
-			node->m_stateListPath = m_transProbPath;
-		}
-	}
+        if (node)
+        {
+            node->m_idmap = m_idmap;
+            node->m_symListPath = m_symListPath;
+            node->m_phonePath = m_phonePath;
+            node->m_stateListPath = m_stateListPath;
+            node->m_stateListPath = m_transProbPath;
+        }
+    }
 };
 
 template class LatticeSequenceWithSoftmaxNode<float>;
@@ -1061,7 +1061,7 @@ class DummyCriterionNode : public ComputationNodeNonLooping /*ComputationNode*/<
     {
         return L"DummyCriterion";
     }
-	DeclareTypedDuplicate(DummyCriterionNode)
+    DeclareTypedDuplicate(DummyCriterionNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(DummyCriterionNode);
@@ -1145,8 +1145,8 @@ class ForwardBackwardNode : public  ComputationNodeNonLooping<ElemType>, public 
     {
         return L"ForwardBackward";
     }
-	template <typename NodeDataType> friend class ForwardBackwardNode;
-	DeclareTypedDuplicate(ForwardBackwardNode)
+    template <typename NodeDataType> friend class ForwardBackwardNode;
+    DeclareTypedDuplicate(ForwardBackwardNode)
 
 public:
     ForwardBackwardNode(DEVICEID_TYPE deviceId, const wstring & name, size_t blankTokenId=SIZE_MAX, int delayConstraint=-1) :
@@ -1260,27 +1260,27 @@ public:
         SetDims(TensorShape::Scalar(Environment().IsV2Library()), false);
     }
 
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     virtual void CopyTo(const ComputationNodePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const
     {
@@ -1346,18 +1346,18 @@ public:
     size_t BlankTokenId() { return m_blankTokenId; }
 
 protected:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<ForwardBackwardNode<NodeDataType>>(nodeP);
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<ForwardBackwardNode<NodeDataType>>(nodeP);
 
-		node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
-		node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
-		node->m_CTCposterior->CastAssignValuesOf(*m_CTCposterior);
-		node->m_maxIndexes->CastAssignValuesOf(*m_maxIndexes);
-		node->m_maxValues->CastAssignValuesOf(*m_maxValues);
-		node->m_delayConstraint = m_delayConstraint;
-	}
+        node->m_logSoftmaxOfRight->CastAssignValuesOf(*m_logSoftmaxOfRight);
+        node->m_softmaxOfRight->CastAssignValuesOf(*m_softmaxOfRight);
+        node->m_CTCposterior->CastAssignValuesOf(*m_CTCposterior);
+        node->m_maxIndexes->CastAssignValuesOf(*m_maxIndexes);
+        node->m_maxValues->CastAssignValuesOf(*m_maxValues);
+        node->m_delayConstraint = m_delayConstraint;
+    }
 
     virtual bool NodeDoesItsOwnCustomizedMissingColumnsMasking() { return true; }
     shared_ptr<Matrix<ElemType>> m_logSoftmaxOfRight;
@@ -1385,7 +1385,7 @@ class StopGradientNode : public UnaryElementWiseNode<ElemType>
     typedef UnaryElementWiseNode<ElemType> Base; 
     UsingUnaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"StopGradient"; }
-	DeclareTypedDuplicate(StopGradientNode)
+    DeclareTypedDuplicate(StopGradientNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(StopGradientNode);
     StopGradientNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1435,7 +1435,7 @@ class AssignNode : public ComputationNodeNonLooping /*ComputationNode*/<ElemType
     static const std::wstring TypeName() { return L"Assign"; }
 
     shared_ptr<Matrix<ElemType>> m_result;
-	DeclareTypedDuplicate(AssignNode)
+    DeclareTypedDuplicate(AssignNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(AssignNode);
@@ -1517,7 +1517,7 @@ class OutputMultiplexerNode final : public ComputationNodeNonLooping<ElemType>, 
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"OutputMultiplexer"; }
-	DeclareTypedDuplicate(OutputMultiplexerNode)
+    DeclareTypedDuplicate(OutputMultiplexerNode)
 
 public:
     OutputMultiplexerNode(DEVICEID_TYPE deviceId, const wstring& name, size_t outputIndex = 0)
@@ -1574,7 +1574,7 @@ class CustomProxyOpNode : public ComputationNode<ElemType> /* Not deriving from 
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"CustomProxyOpNode"; }
-	DeclareTypedDuplicate(CustomProxyOpNode)
+    DeclareTypedDuplicate(CustomProxyOpNode)
 
 public:
     CustomProxyOpNode(DEVICEID_TYPE deviceId, const wstring& name)

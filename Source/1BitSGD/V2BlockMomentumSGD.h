@@ -107,9 +107,9 @@ namespace Microsoft { namespace MSR { namespace CNTK {
         }
 
         bool OnArrivingAtSyncPoint(
-            const std::list<ComputationNodeBasePtr>& learnableNodes,        /* input/output: */
-            std::list<MatrixBasePtr>& smoothedGradient,						/* input/output: under some setup, it will reset to zero*/
-            size_t  samplesSinceLastSync                                    /* input:  samples processed since last sync on this worker only */
+            const std::list<ComputationNodeBasePtr>& learnableNodes, /* input/output: */
+            std::list<MatrixBasePtr>& smoothedGradient,              /* input/output: under some setup, it will reset to zero*/
+            size_t samplesSinceLastSync                              /* input:  samples processed since last sync on this worker only */
             ) override
         {
             if (m_someWorkerHasFinished)
@@ -117,8 +117,8 @@ namespace Microsoft { namespace MSR { namespace CNTK {
 
             // Let's check the status.
             double statusValue = 0;
-            auto status = ::CNTK::MakeSharedObject<::CNTK::NDArrayView>(::CNTK::DataType::Double, ::CNTK::NDShape{ 1 }, &statusValue, sizeof(double), ::CNTK::DeviceDescriptor::CPUDevice());
-            std::vector<::CNTK::NDArrayViewPtr> aggregatedStatus { status };
+            auto status = ::CNTK::MakeSharedObject<::CNTK::NDArrayView>(::CNTK::DataType::Double, ::CNTK::NDShape{1}, &statusValue, sizeof(double), ::CNTK::DeviceDescriptor::CPUDevice());
+            std::vector<::CNTK::NDArrayViewPtr> aggregatedStatus{status};
             m_communicator->AggregateInPlace(aggregatedStatus, m_communicator->Workers());
 
             if (statusValue > 0)
@@ -135,8 +135,8 @@ namespace Microsoft { namespace MSR { namespace CNTK {
         }
 
         /*virtual*/ void OnEpochEnd(const std::list<ComputationNodeBasePtr>& learnableNodes,
-            std::list<MatrixBasePtr>& smoothedGradient,
-            size_t samplesSinceLastSync) override
+                                    std::list<MatrixBasePtr>& smoothedGradient,
+                                    size_t samplesSinceLastSync) override
         {
             if (!m_someWorkerHasFinished)
             {
@@ -196,10 +196,10 @@ namespace Microsoft { namespace MSR { namespace CNTK {
             m_communicator->AggregateInPlace(aggregatedWeightsPrepared, m_communicator->Workers());
 
             // 2. Let's update the model
-			auto smoothedGradientIter = smoothedGradient.begin();
-			for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++)
+            auto smoothedGradientIter = smoothedGradient.begin();
+            for (auto nodeIter = learnableNodes.begin(); nodeIter != learnableNodes.end(); nodeIter++)
             {
-				ComputationNodeBasePtr pBaseNode = *nodeIter;
+                ComputationNodeBasePtr pBaseNode = *nodeIter;
                 if (!pBaseNode->IsParameterUpdateRequired())
                     continue;
 
@@ -238,35 +238,35 @@ namespace Microsoft { namespace MSR { namespace CNTK {
                     prevWeight.SetValue(currentWeight);
                 }
 
-				//----------------------------------------
-				// 3. reset SGD momentum if necessary 
-				//----------------------------------------
-				{
-					// For half, we keep a copy of float weights, update that too
-					if (std::is_same<ElemType, half>::value)
-					{
-						auto compoundMatrixPtr = dynamic_pointer_cast<Matrix<float>> (*smoothedGradientIter);
-						size_t numCols = currentWeight.GetNumCols();
+                //----------------------------------------
+                // 3. reset SGD momentum if necessary
+                //----------------------------------------
+                {
+                    // For half, we keep a copy of float weights, update that too
+                    if (std::is_same<ElemType, half>::value)
+                    {
+                        auto compoundMatrixPtr = dynamic_pointer_cast<Matrix<float>>(*smoothedGradientIter);
+                        size_t numCols = currentWeight.GetNumCols();
 
-						auto masterWeightMatrix = compoundMatrixPtr->ColumnSlice(2 * numCols, numCols);
-						masterWeightMatrix.CastAssignValuesOf(currentWeight);
+                        auto masterWeightMatrix = compoundMatrixPtr->ColumnSlice(2 * numCols, numCols);
+                        masterWeightMatrix.CastAssignValuesOf(currentWeight);
 
-						if (m_resetSGDMomentumAfterAggregation)
-						{
-							// Only reset smoothed gradients
-							auto smoothedGradientMatrix = compoundMatrixPtr->ColumnSlice(0, numCols);
-							smoothedGradientMatrix.SetValue(0.0f);
-						}
-					}
-					else
-					{
-						if (m_resetSGDMomentumAfterAggregation)
-						{
-							auto x = dynamic_pointer_cast<Matrix<ElemType>> (*smoothedGradientIter);
-							x->SetValue((ElemType)0);
-						}
-					}
-				}
+                        if (m_resetSGDMomentumAfterAggregation)
+                        {
+                            // Only reset smoothed gradients
+                            auto smoothedGradientMatrix = compoundMatrixPtr->ColumnSlice(0, numCols);
+                            smoothedGradientMatrix.SetValue(0.0f);
+                        }
+                    }
+                    else
+                    {
+                        if (m_resetSGDMomentumAfterAggregation)
+                        {
+                            auto x = dynamic_pointer_cast<Matrix<ElemType>>(*smoothedGradientIter);
+                            x->SetValue((ElemType) 0);
+                        }
+                    }
+                }
             }
         }
 

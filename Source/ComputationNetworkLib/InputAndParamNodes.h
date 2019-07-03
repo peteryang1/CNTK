@@ -38,10 +38,11 @@ class LearnableParameter : public ComputationNode<ElemType>, public NumInputs<0>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"LearnableParameter"; }
-	template <typename NodeDataType> friend class LearnableParameter;
+    template <typename NodeDataType>
+    friend class LearnableParameter;
 
     void InitShape(const TensorShape& shape);
-	DeclareTypedDuplicate(LearnableParameter)
+    DeclareTypedDuplicate(LearnableParameter)
 
 public:
     // this constructor is always run (all other constructors call this one)
@@ -119,7 +120,8 @@ private:
 
     // deferred initialization
     void LazyInitParameters();
-	template <typename NodeDataType> void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
 public:
     // reload parameters from file
@@ -129,7 +131,7 @@ public:
     virtual void Save(File& fstream) const override;
     virtual void Load(File& fstream, size_t modelVersion) override;
 
-	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
+    virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override;
 
     // computation functions don't do anything for parameter nodes
@@ -183,7 +185,6 @@ private:
     float m_regMultiplier; // The multiplier to adjust the L1Reg and L2Reg for Learnable node
 };
 
-
 // -----------------------------------------------------------------------
 // DynamicAxisNode (/*no input*/)
 // This is a holder for MBLayout objects shared across inputs.
@@ -193,7 +194,7 @@ class DynamicAxisNode : public ComputationNode<ElemType>, public NumInputs<0>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"DynamicAxis"; }
-	DeclareTypedDuplicate(DynamicAxisNode)
+    DeclareTypedDuplicate(DynamicAxisNode)
 public:
     DynamicAxisNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -407,7 +408,7 @@ class InputValue : public InputValueBase<ElemType>, public IdentityTransformerNo
 {
     typedef InputValueBase<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"InputValue"; }
-	DeclareTypedDuplicate(InputValue)
+    DeclareTypedDuplicate(InputValue)
 
 public:
     InputValue(DEVICEID_TYPE deviceId, const wstring& name)
@@ -450,7 +451,7 @@ class SparseInputValue : public InputValueBase<ElemType>
     {
         return L"SparseInputValue";
     }
-	DeclareTypedDuplicate(SparseInputValue)
+    DeclareTypedDuplicate(SparseInputValue)
 
 public:
     SparseInputValue(DEVICEID_TYPE deviceId, const wstring& name)
@@ -489,7 +490,7 @@ class EnvironmentInputNode : public ComputationNodeNonLooping<ElemType>, public 
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"EnvironmentInput"; }
-	DeclareTypedDuplicate(EnvironmentInputNode)
+    DeclareTypedDuplicate(EnvironmentInputNode)
 
 public:
     EnvironmentInputNode(DEVICEID_TYPE deviceId, const wstring& name, const wstring& propertyName = L"") :
@@ -577,7 +578,7 @@ class LookupTableNode : public ComputationNode<ElemType>, public NumInputs<2>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"LookupTable"; }
-	DeclareTypedDuplicate(LookupTableNode)
+    DeclareTypedDuplicate(LookupTableNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(LookupTableNode);
@@ -750,7 +751,7 @@ class ConstantNode : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ConstantOp"; }
-	DeclareTypedDuplicate(ConstantNode)
+    DeclareTypedDuplicate(ConstantNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(ConstantNode);
     ConstantNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -806,7 +807,7 @@ class EyeLikeNode : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"EyeLikeOp"; }
-	DeclareTypedDuplicate(EyeLikeNode)
+    DeclareTypedDuplicate(EyeLikeNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(EyeLikeNode);
     EyeLikeNode(DEVICEID_TYPE deviceId, const wstring& name)

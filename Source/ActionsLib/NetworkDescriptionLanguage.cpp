@@ -160,7 +160,7 @@ bool CheckFunction(std::string& p_nodeType, bool* allowUndeterminedVariable)
     else if (EqualInsensitive(nodeType, OperationNameOf(AtanhNode))) ret = true;
     else if (EqualInsensitive(nodeType, OperationNameOf(AveragePoolingNode))) ret = true;
     else if (EqualInsensitive(nodeType, OperationNameOf(BatchNormalizationNode))) ret = true;
-	else if (EqualInsensitive(nodeType, MixedTypedOperationNameOf(CastNode))) ret = true;
+    else if (EqualInsensitive(nodeType, MixedTypedOperationNameOf(CastNode))) ret = true;
 #ifdef COMING_SOON
     else if (EqualInsensitive(nodeType, OperationNameOf(CRFNode), L"CRF")) ret = true;
 #endif

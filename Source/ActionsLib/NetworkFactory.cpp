@@ -40,7 +40,7 @@ bool TryGetNetworkFactory(const ConfigRecordType& config, function<ComputationNe
     DEVICEID_TYPE deviceId = DeviceFromConfig(config);
 
     int traceLevel = config(L"traceLevel", 0);
-	bool forceTrueHalf = config(L"forceTrueHalf", false);
+    bool forceTrueHalf = config(L"forceTrueHalf", false);
     if (config.Exists(L"createNetwork"))
     {
         createNetworkFn = GetCreateNetworkFn(config); // (we need a separate function needed due to template code)
@@ -92,12 +92,12 @@ bool TryGetNetworkFactory(const ConfigRecordType& config, function<ComputationNe
         if (sourceOfNetwork[0] == '{' || sourceOfNetwork[0] == '[') // if { } form then we turn it into ComputationNetwork by constructing a ComputationNetwork from it
             sourceOfNetwork = L"new ComputationNetwork " + sourceOfNetwork;
         let sourceOfBS = msra::strfun::wstrprintf(L"include \'cntk.core.bs\'\n" // include our core lib. Note: Using lowercase here to match the Linux name of the CNTK exe.
-            L"deviceId = %d\n"            // deviceId as passed in
-            L"traceLevel = %d\n"
-            L"precision = '%ls'\n"        // 'float' or 'double'
-            L"network = %ls"              // source code of expression that evaluates to a ComputationNetwork
-			L"forceTrueHalf = %ls",
-            (int)deviceId, traceLevel, ElemTypeName<ElemType>(), sourceOfNetwork.c_str(), (forceTrueHalf ? L"true" : L"false"));
+                                                  L"deviceId = %d\n"            // deviceId as passed in
+                                                  L"traceLevel = %d\n"
+                                                  L"precision = '%ls'\n" // 'float' or 'double'
+                                                  L"network = %ls"       // source code of expression that evaluates to a ComputationNetwork
+                                                  L"forceTrueHalf = %ls",
+                                                  (int) deviceId, traceLevel, ElemTypeName<ElemType>(), sourceOfNetwork.c_str(), (forceTrueHalf ? L"true" : L"false"));
         let expr = BS::ParseConfigDictFromString(sourceOfBS, L"BrainScriptNetworkBuilder", move(includePaths));
 
         // the rest is done in a lambda that is only evaluated when a virgin network is needed

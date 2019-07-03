@@ -184,9 +184,11 @@ static shared_ptr<ComputationNode<ElemType>> CreateNode(const std::wstring& node
 template <class ElemType1, class ElemType2, class... _Types>
 static shared_ptr<ComputationNode<ElemType1>> CreateNode2(const std::wstring& nodeType, _Types&&... _Args)
 {
-	// check more types
-	if (nodeType == MixedTypedOperationNameOf(CastNode)) return New<CastNode<ElemType1, ElemType2>>(forward<_Types>(_Args)...);
-	else RuntimeError("CreateNode2: unsupport nodeType - %ls", nodeType.c_str());
+    // check more types
+    if (nodeType == MixedTypedOperationNameOf(CastNode))
+        return New<CastNode<ElemType1, ElemType2>>(forward<_Types>(_Args)...);
+    else
+        RuntimeError("CreateNode2: unsupport nodeType - %ls", nodeType.c_str());
 }
 
 // this function is called from SimpleNetworkBuilder and old NDL
@@ -207,7 +209,7 @@ template <class ElemType>
 template <class ElemType2>
 /*static*/ shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::NewNode2(const std::wstring& nodeType, DEVICEID_TYPE deviceId, const wstring& name)
 {
-	return CreateNode2<ElemType, ElemType2>(nodeType, deviceId, name);
+    return CreateNode2<ElemType, ElemType2>(nodeType, deviceId, name);
 }
 
 shared_ptr<ComputationNodeBase> NewComputationNodeFromConfig(const Microsoft::MSR::ScriptableObjects::IConfigRecordPtr configp)
@@ -216,53 +218,53 @@ shared_ptr<ComputationNodeBase> NewComputationNodeFromConfig(const Microsoft::MS
     wstring operationName = configp->Get(L"operation");
     ComputationNodeBasePtr node;
 
-	if (operationName == MixedTypedOperationNameOf(CastNode))
-	{
-		auto inputs = ComputationNodeBase::GetInputsFromConfig(configp);
-		if (inputs.empty())
-			RuntimeError("NewComputationNodeFromConfig: No inputs found for Cast Node.");
+    if (operationName == MixedTypedOperationNameOf(CastNode))
+    {
+        auto inputs = ComputationNodeBase::GetInputsFromConfig(configp);
+        if (inputs.empty())
+            RuntimeError("NewComputationNodeFromConfig: No inputs found for Cast Node.");
 
-		if (precision == L"float16" || precision == L"half")
-		{
-			if (inputs[0]->Is<ComputationNode<float>>())
-				node = CreateNode2<half, float>(operationName, configp);
-			else if (inputs[0]->Is<ComputationNode<double>>())
-				node = CreateNode2<half, double>(operationName, configp);
-			else
-				RuntimeError("NewComputationNodeFromConfig: for CastNode to cast to half, input must be 'float' or 'double'");
-		}
-		else if (precision == L"float")
-		{
-			if (inputs[0]->Is<ComputationNode<half>>())
-				node = CreateNode2<float, half>(operationName, configp);
-			else if (inputs[0]->Is<ComputationNode<double>>())
-				node = CreateNode2<float, double>(operationName, configp);
-			else
-				RuntimeError("NewComputationNodeFromConfig: for CastNode to cast to float, input must be 'half' or 'double'");
-		}
-		else if (precision == L"double")
-		{
-			if (inputs[0]->Is<ComputationNode<float>>())
-				node = CreateNode2<double, float>(operationName, configp);
-			else if (inputs[0]->Is<ComputationNode<half>>())
-				node = CreateNode2<double, half>(operationName, configp);
-			else
-				RuntimeError("NewComputationNodeFromConfig: for CastNode to cast to double, input must be 'float' or 'half'");
-		}
-		else
-			RuntimeError("NewComputationNodeFromConfig: CastNode - need to specify 'precision' parameter: 'float', 'double' or 'half'.");
-	}
-	else
-	{
-		if (precision == L"float")
-			node = CreateNode<float>(operationName, configp);
-		else if (precision == L"double")
-			node = CreateNode<double>(operationName, configp);
-		else if (precision == L"half" || precision == L"float16")
-			node = CreateNode<half>(operationName, configp);
-		else
-			RuntimeError("NewStandardNode: Invalid value '%ls' for 'precision' parameter. Must be 'float', 'half' or 'double'.", precision.c_str());
-	}
+        if (precision == L"float16" || precision == L"half")
+        {
+            if (inputs[0]->Is<ComputationNode<float>>())
+                node = CreateNode2<half, float>(operationName, configp);
+            else if (inputs[0]->Is<ComputationNode<double>>())
+                node = CreateNode2<half, double>(operationName, configp);
+            else
+                RuntimeError("NewComputationNodeFromConfig: for CastNode to cast to half, input must be 'float' or 'double'");
+        }
+        else if (precision == L"float")
+        {
+            if (inputs[0]->Is<ComputationNode<half>>())
+                node = CreateNode2<float, half>(operationName, configp);
+            else if (inputs[0]->Is<ComputationNode<double>>())
+                node = CreateNode2<float, double>(operationName, configp);
+            else
+                RuntimeError("NewComputationNodeFromConfig: for CastNode to cast to float, input must be 'half' or 'double'");
+        }
+        else if (precision == L"double")
+        {
+            if (inputs[0]->Is<ComputationNode<float>>())
+                node = CreateNode2<double, float>(operationName, configp);
+            else if (inputs[0]->Is<ComputationNode<half>>())
+                node = CreateNode2<double, half>(operationName, configp);
+            else
+                RuntimeError("NewComputationNodeFromConfig: for CastNode to cast to double, input must be 'float' or 'half'");
+        }
+        else
+            RuntimeError("NewComputationNodeFromConfig: CastNode - need to specify 'precision' parameter: 'float', 'double' or 'half'.");
+    }
+    else
+    {
+        if (precision == L"float")
+            node = CreateNode<float>(operationName, configp);
+        else if (precision == L"double")
+            node = CreateNode<double>(operationName, configp);
+        else if (precision == L"half" || precision == L"float16")
+            node = CreateNode<half>(operationName, configp);
+        else
+            RuntimeError("NewStandardNode: Invalid value '%ls' for 'precision' parameter. Must be 'float', 'half' or 'double'.", precision.c_str());
+    }
 
 
     
@@ -391,7 +393,7 @@ template <class ElemType>
 template <class InputNodeType>
 shared_ptr<ComputationNode<ElemType>> ComputationNetworkBuilder<ElemType>::CreateCastNode(const std::wstring& nodeName)
 {
-	return net.AddNodeToNetWithElemType(New<CastNode<ElemType, InputNodeType>>(net.GetDeviceId(), nodeName));
+    return net.AddNodeToNetWithElemType(New<CastNode<ElemType, InputNodeType>>(net.GetDeviceId(), nodeName));
 }
 
 // this is the catch-all for all cases not covered as special cases above

@@ -40,8 +40,8 @@ TextConfigHelper::TextConfigHelper(const ConfigParameters& config)
     }
 
     string precision = config.Find("precision", "float");
-	if (precision == "half")
-		precision = "float";
+    if (precision == "half")
+        precision = "float";
     if (AreEqualIgnoreCase(precision, "double"))
     {
         m_elementType = DataType::Double;

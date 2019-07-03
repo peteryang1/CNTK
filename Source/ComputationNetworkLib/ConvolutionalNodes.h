@@ -50,7 +50,8 @@ template <class ElemType>
 class ConvolutionNodeBase : public ComputationNode<ElemType>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;
-	template <typename NodeDataType> friend class ConvolutionNodeBase;
+    template <typename NodeDataType>
+    friend class ConvolutionNodeBase;
 
 public:
     ConvolutionNodeBase(DEVICEID_TYPE deviceId, const wstring& name)
@@ -128,48 +129,48 @@ public:
     }
 
 private:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<ConvolutionNodeBase<NodeDataType>>(nodeP);
-		node->m_kernelShape = m_kernelShape;
-		node->m_mapCount = m_mapCount;
-		node->m_stride = m_stride;
-		node->m_sharing = m_sharing;
-		node->m_autoPad = m_autoPad;
-		node->m_lowerPad = m_lowerPad;
-		node->m_upperPad = m_upperPad;
-		node->m_poolKind = m_poolKind;
-		node->m_transpose = m_transpose;
-		node->m_outputShape = m_outputShape;
-		node->m_ceilOutDim = m_ceilOutDim;
-		node->m_poolIncludePad = m_poolIncludePad;
-		node->m_imageLayout = m_imageLayout;
-		node->m_maxTempMemSizeInSamples = m_maxTempMemSizeInSamples;
-	}
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<ConvolutionNodeBase<NodeDataType>>(nodeP);
+        node->m_kernelShape = m_kernelShape;
+        node->m_mapCount = m_mapCount;
+        node->m_stride = m_stride;
+        node->m_sharing = m_sharing;
+        node->m_autoPad = m_autoPad;
+        node->m_lowerPad = m_lowerPad;
+        node->m_upperPad = m_upperPad;
+        node->m_poolKind = m_poolKind;
+        node->m_transpose = m_transpose;
+        node->m_outputShape = m_outputShape;
+        node->m_ceilOutDim = m_ceilOutDim;
+        node->m_poolIncludePad = m_poolIncludePad;
+        node->m_imageLayout = m_imageLayout;
+        node->m_maxTempMemSizeInSamples = m_maxTempMemSizeInSamples;
+    }
 
 public:
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -364,7 +365,9 @@ class ConvolutionNodeBaseExtended : public ConvolutionNodeBase<ElemType>, public
 {
     typedef ConvolutionNodeBase<ElemType> Base; UsingComputationNodeMembers; 
     UsingConvolutionNodeBaseMembersNonInstantiate;
-	template <typename NodeDataType> friend class ConvolutionNodeBaseExtended;
+    template <typename NodeDataType>
+    friend class ConvolutionNodeBaseExtended;
+
 public:
     ConvolutionNodeBaseExtended(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name), m_dilation(TensorShape(1)), m_groups(1)
@@ -396,7 +399,7 @@ public:
             false, TensorShape(0), imageLayout, maxTempMemSizeInSamples)
     {
         m_convolution2D = true;
-		m_forceTrueHalf = false;
+        m_forceTrueHalf = false;
     }
     ConvolutionNodeBaseExtended(const ScriptableObjects::IConfigRecordPtr configp)
         : ConvolutionNodeBaseExtended(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"kernelShape"), configp->Get(L"mapCount"), configp->Get(L"strideShape"),
@@ -464,43 +467,43 @@ public:
             }
         }
     }
-	// DeclareTypedDuplicate(ConvolutionNodeBaseExtended)
-	//ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
-	//{
-	//	NOT_IMPLEMENTED;
-	//}
+    // DeclareTypedDuplicate(ConvolutionNodeBaseExtended)
+    //ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
+    //{
+    //	NOT_IMPLEMENTED;
+    //}
 
 private:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<ConvolutionNodeBaseExtended<NodeDataType>>(nodeP);
-		node->m_convolution2D = m_convolution2D;
-		node->m_groups = m_groups;
-	}
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<ConvolutionNodeBaseExtended<NodeDataType>>(nodeP);
+        node->m_convolution2D = m_convolution2D;
+        node->m_groups = m_groups;
+    }
 
 public:
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -509,7 +512,7 @@ public:
         {
             auto node = dynamic_pointer_cast<ConvolutionNodeBaseExtended<ElemType>>(nodeP);
             node->m_convolution2D = m_convolution2D;
-			node->m_groups = m_groups;
+            node->m_groups = m_groups;
         }
     }
 
@@ -545,7 +548,7 @@ protected:
     size_t m_groups;
     // Flag that indicates whether the node is created using 2D-syntax.
     bool m_convolution2D;
-	bool m_forceTrueHalf;
+    bool m_forceTrueHalf;
 };
 
 #define UsingConvolutionBaseNodeMembers     \
@@ -554,7 +557,7 @@ protected:                                  \
     using Base::m_dilation;                 \
     using Base::m_groups;                   \
     using Base::m_convolution2D;            \
-	using Base::m_forceTrueHalf;			\
+    using Base::m_forceTrueHalf;            \
 public:
 
 // -----------------------------------------------------------------------
@@ -566,7 +569,7 @@ class ConvolutionNode : public ConvolutionNodeBaseExtended<ElemType>, public Tra
 {
     typedef ConvolutionNodeBaseExtended<ElemType> Base; UsingConvolutionBaseNodeMembers;
     static const std::wstring TypeName() { return L"Convolution"; }
-	DeclareTypedDuplicate(ConvolutionNode)
+    DeclareTypedDuplicate(ConvolutionNode)
 
 public:
     ConvolutionNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -898,7 +901,7 @@ private:
         InputConvolutionMapIdx = 0,
         InputOperandIdx = 1,
     };
-	DeclareTypedDuplicate(ConvolutionSequenceShapeNode)
+    DeclareTypedDuplicate(ConvolutionSequenceShapeNode)
 
 public:
     static const std::wstring TypeName() { return L"ConvolutionSequenceShape"; }
@@ -1066,8 +1069,9 @@ class ROIPoolingNode : public ComputationNode<ElemType>, public NumInputs<2>
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ROIPooling"; }
-	template <typename NodeDataType> friend class ROIPoolingNode;
-	DeclareTypedDuplicate(ROIPoolingNode)
+    template <typename NodeDataType>
+    friend class ROIPoolingNode;
+    DeclareTypedDuplicate(ROIPoolingNode)
 
 public:
     ROIPoolingNode(DEVICEID_TYPE deviceId, const wstring& name, PoolKind poolKind = PoolKind::Max, const TensorShape& roiOutputShape = TensorShape(), double spatialScale = 1.0/16.0)
@@ -1231,37 +1235,37 @@ public:
     }
 
 private:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<ROIPoolingNode<NodeDataType>>(nodeP);
-		node->m_poolKind = m_poolKind;
-		node->m_roiOutputShape = m_roiOutputShape;
-		node->m_spatialScale = m_spatialScale;
-	}
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<ROIPoolingNode<NodeDataType>>(nodeP);
+        node->m_poolKind = m_poolKind;
+        node->m_roiOutputShape = m_roiOutputShape;
+        node->m_spatialScale = m_spatialScale;
+    }
 
 public:
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1297,7 +1301,7 @@ class PoolingNode : public ConvolutionNodeBase<ElemType>, public NumInputs<1>, p
 {
     typedef ConvolutionNodeBase<ElemType> Base; UsingConvolutionNodeBaseMembers;
     static const std::wstring TypeName() { return L"Pooling"; }
-	DeclareTypedDuplicate(PoolingNode)
+    DeclareTypedDuplicate(PoolingNode)
 
 public:
     PoolingNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1427,7 +1431,7 @@ class MaxUnpoolingNode : public ConvolutionNodeBase<ElemType>, public NumInputs<
     typedef ConvolutionNodeBase<ElemType> Base;
     UsingConvolutionNodeBaseMembers;
     static const std::wstring TypeName() { return L"MaxUnpooling"; }
-	DeclareTypedDuplicate(MaxUnpoolingNode)
+    DeclareTypedDuplicate(MaxUnpoolingNode)
 
 public:
     MaxUnpoolingNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1546,7 +1550,8 @@ class PoolingNodeBase : public ComputationNode<ElemType>, public NumInputs<1>
 {
     typedef ComputationNode<ElemType> Base;
     UsingComputationNodeMembers;
-	template <typename NodeDataType> friend class PoolingNodeBase;
+    template <typename NodeDataType>
+    friend class PoolingNodeBase;
 
 public:
     PoolingNodeBase(DEVICEID_TYPE deviceId, const wstring& name, PoolKind poolKind)
@@ -1584,7 +1589,6 @@ public:
         AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
     }
 
-
     void Save(File& fstream) const override
     {
         Base::Save(fstream);
@@ -1605,47 +1609,47 @@ public:
     }
 
 private:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<PoolingNodeBase<NodeDataType>>(nodeP);
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<PoolingNodeBase<NodeDataType>>(nodeP);
 
-		node->m_windowWidth = m_windowWidth;
-		node->m_windowHeight = m_windowHeight;
+        node->m_windowWidth = m_windowWidth;
+        node->m_windowHeight = m_windowHeight;
 
-		node->m_horizontalSubsample = m_horizontalSubsample;
-		node->m_verticalSubsample = m_verticalSubsample;
+        node->m_horizontalSubsample = m_horizontalSubsample;
+        node->m_verticalSubsample = m_verticalSubsample;
 
-		node->m_inputSizePerSample = m_inputSizePerSample;
-		node->m_outputSizePerSample = m_outputSizePerSample;
+        node->m_inputSizePerSample = m_inputSizePerSample;
+        node->m_outputSizePerSample = m_outputSizePerSample;
 
-		node->m_imageLayoutKind = m_imageLayoutKind;
+        node->m_imageLayoutKind = m_imageLayoutKind;
 
-		node->ConvertToTensorShape();
-	}
+        node->ConvertToTensorShape();
+    }
 
 public:
-	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::TypedCopyTo(nodeP, newName, dataType, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default:
-				RuntimeError("Type is not supported.");
-			}
-		}
-	}
+    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::TypedCopyTo(nodeP, newName, dataType, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type is not supported.");
+            }
+        }
+    }
 
     void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1819,7 +1823,7 @@ class MaxPoolingNode : public PoolingNodeBase<ElemType>
     {
         return L"MaxPooling";
     }
-	DeclareTypedDuplicate(MaxPoolingNode)
+    DeclareTypedDuplicate(MaxPoolingNode)
 
 public:
     MaxPoolingNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1860,7 +1864,7 @@ class AveragePoolingNode : public PoolingNodeBase<ElemType>
     {
         return L"AveragePooling";
     }
-	DeclareTypedDuplicate(AveragePoolingNode)
+    DeclareTypedDuplicate(AveragePoolingNode)
 
 public:
     AveragePoolingNode(DEVICEID_TYPE deviceId, const wstring& name)

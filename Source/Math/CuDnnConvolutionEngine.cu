@@ -41,157 +41,157 @@ using ConvAlgorithmWithCost = std::tuple<int, float>;
 
 enum class CuDnnConvDirection 
 {
-	Forward,
-	BackwardData,
-	BackwardFilter
+    Forward,
+    BackwardData,
+    BackwardFilter
 };
 
 static constexpr std::array<cudnnDataType_t, 2> kComputeTypesToTry = {
-	CUDNN_DATA_FLOAT,
-	CUDNN_DATA_HALF };
+    CUDNN_DATA_FLOAT,
+    CUDNN_DATA_HALF };
 
 static wstring ConvFwdAlgoToString(cudnnConvolutionFwdAlgo_t algo)
 {
-	switch (algo)
-	{
-	case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM";
-	case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM";
-	case CUDNN_CONVOLUTION_FWD_ALGO_GEMM:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_GEMM";
-	case CUDNN_CONVOLUTION_FWD_ALGO_DIRECT:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_DIRECT";
-	case CUDNN_CONVOLUTION_FWD_ALGO_FFT:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT";
-	case CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING";
-	case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD";
-	case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED:
-		return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED";
-	default:
-		return L"UNKNOWN_FWD_ALGO";
-	}
+    switch (algo)
+    {
+    case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM";
+    case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM";
+    case CUDNN_CONVOLUTION_FWD_ALGO_GEMM:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_GEMM";
+    case CUDNN_CONVOLUTION_FWD_ALGO_DIRECT:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_DIRECT";
+    case CUDNN_CONVOLUTION_FWD_ALGO_FFT:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT";
+    case CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING";
+    case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD";
+    case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED:
+        return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED";
+    default:
+        return L"UNKNOWN_FWD_ALGO";
+    }
 }
 
 static wstring ConvBwdFilterAlgoToString(cudnnConvolutionBwdFilterAlgo_t algo)
 {
-	switch (algo)
-	{
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0";
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1";
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT";
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3";
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD";
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED";
-	case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING:
-		return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING";
-	default:
-		return L"UNKNOWN_BWD_FILTER_ALGO";
-	}
+    switch (algo)
+    {
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0";
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1";
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT";
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3";
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD";
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED";
+    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING:
+        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING";
+    default:
+        return L"UNKNOWN_BWD_FILTER_ALGO";
+    }
 }
 
 static wstring ConvBwdDataAlgoToString(cudnnConvolutionBwdDataAlgo_t algo)
 {
-	switch (algo)
-	{
-	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_0:
-		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_0";
-	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_1:
-		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_1";
-	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT:
-		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT";
-	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING:
-		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING";
-	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD:
-		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD";
-	case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED:
-		return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED";
-	default:
-		return L"UNKNOWN_BWD_DATA_ALGO";
-	}
+    switch (algo)
+    {
+    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_0:
+        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_0";
+    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_1:
+        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_1";
+    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT:
+        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT";
+    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING:
+        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING";
+    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD:
+        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD";
+    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED:
+        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED";
+    default:
+        return L"UNKNOWN_BWD_DATA_ALGO";
+    }
 }
 
 static wstring ConvAlgoToString(int algo, CuDnnConvDirection algoType)
 {
-	switch (algoType)
-	{
-	case CuDnnConvDirection::Forward:
-		return ConvFwdAlgoToString((cudnnConvolutionFwdAlgo_t)algo);
-	case CuDnnConvDirection::BackwardData:
-		return ConvBwdDataAlgoToString((cudnnConvolutionBwdDataAlgo_t)algo);
-	case CuDnnConvDirection::BackwardFilter:
-		return ConvBwdFilterAlgoToString((cudnnConvolutionBwdFilterAlgo_t)algo);
-	default:
-		return L"UNKNOWN_ALGO_TYPE";
-	}
+    switch (algoType)
+    {
+    case CuDnnConvDirection::Forward:
+        return ConvFwdAlgoToString((cudnnConvolutionFwdAlgo_t)algo);
+    case CuDnnConvDirection::BackwardData:
+        return ConvBwdDataAlgoToString((cudnnConvolutionBwdDataAlgo_t)algo);
+    case CuDnnConvDirection::BackwardFilter:
+        return ConvBwdFilterAlgoToString((cudnnConvolutionBwdFilterAlgo_t)algo);
+    default:
+        return L"UNKNOWN_ALGO_TYPE";
+    }
 }
 
 static wstring MathTypeToString(cudnnMathType_t mathType)
 {
-	switch (mathType)
-	{
-	case CUDNN_DEFAULT_MATH:
-		return L"CUDNN_DEFAULT_MATH";
-	case CUDNN_TENSOR_OP_MATH:
-		return L"CUDNN_TENSOR_OP_MATH";
-	default:
-		return L"UNKNOWN_MATH_TYPE";
-	}
+    switch (mathType)
+    {
+    case CUDNN_DEFAULT_MATH:
+        return L"CUDNN_DEFAULT_MATH";
+    case CUDNN_TENSOR_OP_MATH:
+        return L"CUDNN_TENSOR_OP_MATH";
+    default:
+        return L"UNKNOWN_MATH_TYPE";
+    }
 }
 
 static wstring DataTypeToString(cudnnDataType_t dataType)
 {
-	switch (dataType)
-	{
-	case CUDNN_DATA_FLOAT:
-		return L"CUDNN_DATA_FLOAT";
-	case CUDNN_DATA_HALF:
-		return L"CUDNN_DATA_HALF";
-	case CUDNN_DATA_DOUBLE:
-		return L"CUDNN_DATA_DOUBLE";
-	default:
-		return L"UNKONWN_DATA_TYPE";
-	}
+    switch (dataType)
+    {
+    case CUDNN_DATA_FLOAT:
+        return L"CUDNN_DATA_FLOAT";
+    case CUDNN_DATA_HALF:
+        return L"CUDNN_DATA_HALF";
+    case CUDNN_DATA_DOUBLE:
+        return L"CUDNN_DATA_DOUBLE";
+    default:
+        return L"UNKONWN_DATA_TYPE";
+    }
 }
 
 
 template <class AlgoPerfType>
 void LogConvAlgoTime(int algoCount, AlgoPerfType *perfs)
 {
-	LOGPRINTF(stderr, "[Start Conv Profile]\n");
+    LOGPRINTF(stderr, "[Start Conv Profile]\n");
 
-	if (std::is_same<AlgoPerfType, cudnnConvolutionFwdAlgoPerf_t>::value)
-		for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
-		{
-			wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::Forward);
-			LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
-		}
-	else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdDataAlgoPerf_t>::value)
-		for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
-		{
-			wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::BackwardData);
-			LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
-		}
-	else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdFilterAlgoPerf_t>::value)
-		for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
-		{
-			wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::BackwardFilter);
-			LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
-		}
-	else
-	{
-		LOGPRINTF(stderr, "UNKNOWN_ALGO_TYPE\n");
-	}
+    if (std::is_same<AlgoPerfType, cudnnConvolutionFwdAlgoPerf_t>::value)
+        for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
+        {
+            wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::Forward);
+            LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
+        }
+    else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdDataAlgoPerf_t>::value)
+        for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
+        {
+            wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::BackwardData);
+            LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
+        }
+    else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdFilterAlgoPerf_t>::value)
+        for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
+        {
+            wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::BackwardFilter);
+            LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
+        }
+    else
+    {
+        LOGPRINTF(stderr, "UNKNOWN_ALGO_TYPE\n");
+    }
 
-	LOGPRINTF(stderr, "[End Conv Profile]\n");
+    LOGPRINTF(stderr, "[End Conv Profile]\n");
 }
 
 class CuDnnKernel
@@ -273,7 +273,7 @@ public:
             dilation[m_dimSize - 1 - i] = (int)geometry.GetDilation(i);
         }
 
-		cudnnDataType_t convMathDataType = (!forceTrueHalf && dataType == CUDNN_DATA_HALF) ? CUDNN_DATA_FLOAT : dataType;
+        cudnnDataType_t convMathDataType = (!forceTrueHalf && dataType == CUDNN_DATA_HALF) ? CUDNN_DATA_FLOAT : dataType;
         CUDNN_CALL(cudnnSetConvolutionNdDescriptor(m_conv, (int)m_dimSize, pad.data(),
                                                    stride.data(), dilation.data(),
                                                    CUDNN_CROSS_CORRELATION, convMathDataType));
@@ -296,29 +296,29 @@ public:
         return m_conv;
     }
 
-	void SetConvDescComputeType(cudnnDataType_t newType)
-	{
-		cudnnConvolutionMode_t mode;
-		cudnnDataType_t dataType;
-		int arrayLength = 0;
-		vector<int> dilation(m_dimSize, 1);
-		vector<int> pad(m_dimSize, 0);
-		vector<int> stride(m_dimSize, 1);
-		CUDNN_CALL(cudnnGetConvolutionNdDescriptor(
-			m_conv, (int)m_dimSize, &arrayLength,
-			pad.data(), stride.data(), dilation.data(),
-			&mode, &dataType));
-		CUDNN_CALL(cudnnSetConvolutionNdDescriptor(
-			m_conv, (int)m_dimSize, 
-			pad.data(), stride.data(), dilation.data(),
-			mode, newType));
-	}
+    void SetConvDescComputeType(cudnnDataType_t newType)
+    {
+        cudnnConvolutionMode_t mode;
+        cudnnDataType_t dataType;
+        int arrayLength = 0;
+        vector<int> dilation(m_dimSize, 1);
+        vector<int> pad(m_dimSize, 0);
+        vector<int> stride(m_dimSize, 1);
+        CUDNN_CALL(cudnnGetConvolutionNdDescriptor(
+            m_conv, (int)m_dimSize, &arrayLength,
+            pad.data(), stride.data(), dilation.data(),
+            &mode, &dataType));
+        CUDNN_CALL(cudnnSetConvolutionNdDescriptor(
+            m_conv, (int)m_dimSize, 
+            pad.data(), stride.data(), dilation.data(),
+            mode, newType));
+    }
 
     DISABLE_COPY_AND_MOVE(CuDnnConv);
 
 private:
     cudnnConvolutionDescriptor_t m_conv;
-	size_t m_dimSize;
+    size_t m_dimSize;
 };
 
 class CuDnnPool
@@ -416,12 +416,12 @@ public:
           m_dataType(CuDnnTensor::GetDataType<ElemType>()),
           m_forceDeterministicAlgorithms(forceDeterministicAlgorithms),
           m_inputHasFreeDimension(inputHasFreeDimension),
-		  m_forceTrueHalf(forceTrueHalf)
+          m_forceTrueHalf(forceTrueHalf)
     {
-		// In TRUE_HALF_CONFIG:
-		// Use CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM for forward
-		// Use CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1 for backward_filter
-		// Use CUDNN_CONVOLUTION_BWD_DATA_ALGO_1 for backward_data
+        // In TRUE_HALF_CONFIG:
+        // Use CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM for forward
+        // Use CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1 for backward_filter
+        // Use CUDNN_CONVOLUTION_BWD_DATA_ALGO_1 for backward_data
 
         auto inShape = geometry->InputShape();
         auto outShape = geometry->OutputShape();
@@ -466,8 +466,8 @@ protected:
         {
             m_kernelT = std::make_unique<CuDnnKernel>(*m_geometry, m_dataType);
             m_conv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType, m_forceTrueHalf);
-			m_backwardDataConv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType, m_forceTrueHalf);
-			m_backwardFilterConv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType, m_forceTrueHalf);
+            m_backwardDataConv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType, m_forceTrueHalf);
+            m_backwardFilterConv = std::make_unique<CuDnnConv>(*m_geometry, m_dataType, m_forceTrueHalf);
         }
     }
 
@@ -778,21 +778,21 @@ private:
 
     static const int MaxAlgoCount = 10;
 
-	void ChangeConvDescDataType(cudnnDataType_t newType, CuDnnConvDirection direction)
-	{
-		switch (direction)
-		{
-		case CuDnnConvDirection::Forward:
-			m_conv->SetConvDescComputeType(newType);
-			break;
-		case CuDnnConvDirection::BackwardData:
-			m_backwardDataConv->SetConvDescComputeType(newType);
-			break;
-		case CuDnnConvDirection::BackwardFilter:
-			m_backwardFilterConv->SetConvDescComputeType(newType);
-			break;
-		}
-	}
+    void ChangeConvDescDataType(cudnnDataType_t newType, CuDnnConvDirection direction)
+    {
+        switch (direction)
+        {
+        case CuDnnConvDirection::Forward:
+            m_conv->SetConvDescComputeType(newType);
+            break;
+        case CuDnnConvDirection::BackwardData:
+            m_backwardDataConv->SetConvDescComputeType(newType);
+            break;
+        case CuDnnConvDirection::BackwardFilter:
+            m_backwardFilterConv->SetConvDescComputeType(newType);
+            break;
+        }
+    }
 
     template <typename TAlgo, typename TWorkspaceSizeFinder, typename TDeterministicFinder, typename TFinder, typename TStaticFinder>
     void FindBestAlgo(CuDnnConvDirection convDirection, size_t batchSize, TAlgo& algo, TWorkspaceSizeFinder workspaceSizeFinder, TDeterministicFinder deterministicFinder, TFinder finder, TStaticFinder staticFinder, Mat& workspace)
@@ -835,7 +835,7 @@ private:
                 assert(calgo == 1);                                 // only one deterministic algorithm will be returned
                 algo.RecordAlgoBatchSizeWorkspaceSize(true, (*algoPerf).algo, batchSize, (*algoPerf).memory);
                 algo.autotuningState = AutotuningState::Running;    // no further need for tuning since this is deterministic, directly enter running state
-				return;
+                return;
             }
         }
 
@@ -862,46 +862,46 @@ private:
                 if(resizeTo > 0)
                     workspace.Resize((resizeTo + sizeof(ElemType) - 1) / sizeof(ElemType), 1);     // resize the workspace so that we can run the finder
 
-				std::array<typename TAlgo::typeT, 2> algosToCompare;
-				typename TAlgo::typeT *res = nullptr;
+                std::array<typename TAlgo::typeT, 2> algosToCompare;
+                typename TAlgo::typeT *res = nullptr;
 
-				LOGPRINTF(stderr, "\n==================================Start Conv Debug Info======================================\n");
-				LOGPRINTF(stderr, "[Conv kernel Info]:\n%s\n", ((std::string)(*m_geometry)).c_str());
+                LOGPRINTF(stderr, "\n==================================Start Conv Debug Info======================================\n");
+                LOGPRINTF(stderr, "[Conv kernel Info]:\n%s\n", ((std::string)(*m_geometry)).c_str());
 
-				for (int convDataTypeIdx = 0; convDataTypeIdx < 2; ++convDataTypeIdx)
-				{
-					ChangeConvDescDataType(kComputeTypesToTry[convDataTypeIdx], convDirection);
-					std::array<typename TAlgo::typeT, MaxAlgoCount> algoPerfStats;
-					int algoCount = 0;
-					CUDNN_CALL(finder(algoCount, algoPerfStats.data()));
-					assert(algoCount > 0);
-					LOGPRINTF(stderr, "\n\nConv log for %ls Type:\n", DataTypeToString(kComputeTypesToTry[convDataTypeIdx]).c_str());
-					LogConvAlgoTime<typename TAlgo::typeT>(algoCount, algoPerfStats.data());
-					algosToCompare[convDataTypeIdx] = algoPerfStats[0];
-					if (algosToCompare[convDataTypeIdx].time < 0)
-						algosToCompare[convDataTypeIdx].time = 1e10;
+                for (int convDataTypeIdx = 0; convDataTypeIdx < 2; ++convDataTypeIdx)
+                {
+                    ChangeConvDescDataType(kComputeTypesToTry[convDataTypeIdx], convDirection);
+                    std::array<typename TAlgo::typeT, MaxAlgoCount> algoPerfStats;
+                    int algoCount = 0;
+                    CUDNN_CALL(finder(algoCount, algoPerfStats.data()));
+                    assert(algoCount > 0);
+                    LOGPRINTF(stderr, "\n\nConv log for %ls Type:\n", DataTypeToString(kComputeTypesToTry[convDataTypeIdx]).c_str());
+                    LogConvAlgoTime<typename TAlgo::typeT>(algoCount, algoPerfStats.data());
+                    algosToCompare[convDataTypeIdx] = algoPerfStats[0];
+                    if (algosToCompare[convDataTypeIdx].time < 0)
+                        algosToCompare[convDataTypeIdx].time = 1e10;
 
-					if (!std::is_same<ElemType, half>::value)
-						break;
-				}
+                    if (!std::is_same<ElemType, half>::value)
+                        break;
+                }
 
-				if (!std::is_same<ElemType, half>::value)
-				{
-					res = &algosToCompare[0];
-					LOGPRINTF(stderr, "Choose pseudo-half(float) to compute\n");
-				}
-				else
-				{
-					int bestAlgoDataTypeIndex =
-						(algosToCompare[0].time < algosToCompare[1].time)
-						? 0
-						: 1;
-					res = &algosToCompare[bestAlgoDataTypeIndex];
-					ChangeConvDescDataType(kComputeTypesToTry[bestAlgoDataTypeIndex], convDirection);
-					LOGPRINTF(stderr, "Choose %s to compute\n", (bestAlgoDataTypeIndex == 0) ? "pseudo-half(float)" : "true-half(half)");
-				}
+                if (!std::is_same<ElemType, half>::value)
+                {
+                    res = &algosToCompare[0];
+                    LOGPRINTF(stderr, "Choose pseudo-half(float) to compute\n");
+                }
+                else
+                {
+                    int bestAlgoDataTypeIndex =
+                        (algosToCompare[0].time < algosToCompare[1].time)
+                        ? 0
+                        : 1;
+                    res = &algosToCompare[bestAlgoDataTypeIndex];
+                    ChangeConvDescDataType(kComputeTypesToTry[bestAlgoDataTypeIndex], convDirection);
+                    LOGPRINTF(stderr, "Choose %s to compute\n", (bestAlgoDataTypeIndex == 0) ? "pseudo-half(float)" : "true-half(half)");
+                }
 
-				LOGPRINTF(stderr, "\n==================================End Conv Debug Info======================================\n");
+                LOGPRINTF(stderr, "\n==================================End Conv Debug Info======================================\n");
 
                 algo.RecordAlgoBatchSizeWorkspaceSize(true, (*res).algo, batchSize, (*res).memory);
                 algo.AlgoMathType = (*res).mathType;
@@ -1020,8 +1020,8 @@ private:
     // Convolution specific.
     std::unique_ptr<CuDnnKernel> m_kernelT;
     std::unique_ptr<CuDnnConv> m_conv;
-	std::unique_ptr<CuDnnConv> m_backwardDataConv;
-	std::unique_ptr<CuDnnConv> m_backwardFilterConv;
+    std::unique_ptr<CuDnnConv> m_backwardDataConv;
+    std::unique_ptr<CuDnnConv> m_backwardFilterConv;
     // Pooling specific.
     std::unique_ptr<CuDnnPool> m_pool;
 
@@ -1032,7 +1032,7 @@ private:
     // Flag indicating whether only deterministic algorithms should be used.
     bool m_forceDeterministicAlgorithms;
     bool m_inputHasFreeDimension;
-	bool m_forceTrueHalf;
+    bool m_forceTrueHalf;
 };
 
 template <class ElemType>

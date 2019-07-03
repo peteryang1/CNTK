@@ -38,9 +38,9 @@ public:
     }
 
 	virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
-	{
-		NOT_IMPLEMENTED;
-	}
+    {
+        NOT_IMPLEMENTED;
+    }
 
     Matrix<ElemType>& GetGradient();
 

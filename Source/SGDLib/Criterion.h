@@ -75,11 +75,11 @@ struct EpochCriterion : public std::pair<double, size_t>
 // Interface for CriterionAccumulator
 struct CriterionAccumulatorBase
 {
-	CriterionAccumulatorBase() {}
-	virtual ~CriterionAccumulatorBase() {}
-	virtual const CriterionAccumulatorBase & Add(size_t i, size_t numSamplesInMinibatch) = 0;
-	virtual const CriterionAccumulatorBase & Assign(size_t i, size_t numSamplesInMinibatch) = 0;
-	virtual EpochCriterion GetCriterion(size_t i) const = 0;
+    CriterionAccumulatorBase() {}
+    virtual ~CriterionAccumulatorBase() {}
+    virtual const CriterionAccumulatorBase& Add(size_t i, size_t numSamplesInMinibatch) = 0;
+    virtual const CriterionAccumulatorBase& Assign(size_t i, size_t numSamplesInMinibatch) = 0;
+    virtual EpochCriterion GetCriterion(size_t i) const = 0;
 };
 
 // We accumulate criteria in this struct.
@@ -105,12 +105,12 @@ struct CriterionAccumulator : CriterionAccumulatorBase
     {
         return Accumulate(i, numSamplesInMinibatch, /*reset=*/false);
     }
-	virtual const CriterionAccumulator& Assign(size_t i, size_t numSamplesInMinibatch) override
+    virtual const CriterionAccumulator& Assign(size_t i, size_t numSamplesInMinibatch) override
     {
         return Accumulate(i, numSamplesInMinibatch, /*reset=*/true);
     }
     // retrieve an accumulated result as a pair (numerator, denominator)
-	virtual EpochCriterion GetCriterion(size_t i) const override
+    virtual EpochCriterion GetCriterion(size_t i) const override
     {
         // BUGBUG: For unknown reasons, this (or the other below) check makes a difference for MPI configs.
         //         If it is left out, then training and test configs end up being scaled by the same factor close to 1.
@@ -207,23 +207,24 @@ private:
 class CriterionAccumulatorFactory
 {
 public:
-	template <class ElemType>
-	static shared_ptr<CriterionAccumulatorBase> CreateCriterionAccumulator(
-		const std::vector<ComputationNodeBasePtr>& criterionNodes, DEVICEID_TYPE deviceId,
-		const std::vector<ComputationNodeBasePtr>& accumulatorCriterionNodesNodes = {})
-	{
-		// Both half and float use float as accumulator
-		if (std::is_same<ElemType, float>() || std::is_same<ElemType, half>())
-		{
-			return make_shared<CriterionAccumulator<float>>(criterionNodes, deviceId, accumulatorCriterionNodesNodes);
-		}
-		else if (std::is_same<ElemType, double>())
-		{
-			return make_shared<CriterionAccumulator<double>>(criterionNodes, deviceId, accumulatorCriterionNodesNodes);
-		}
-		RuntimeError("CreateCriterionAccumulator: unsupported node element type!");
-	}
-
+    template <class ElemType>
+    static shared_ptr<CriterionAccumulatorBase> CreateCriterionAccumulator(
+        const std::vector<ComputationNodeBasePtr>& criterionNodes, DEVICEID_TYPE deviceId,
+        const std::vector<ComputationNodeBasePtr>& accumulatorCriterionNodesNodes = {})
+    {
+        // Both half and float use float as accumulator
+        if (std::is_same<ElemType, float>() || std::is_same<ElemType, half>())
+        {
+            return make_shared<CriterionAccumulator<float>>(criterionNodes, deviceId, accumulatorCriterionNodesNodes);
+        }
+        else if (std::is_same<ElemType, double>())
+        {
+            return make_shared<CriterionAccumulator<double>>(criterionNodes, deviceId, accumulatorCriterionNodesNodes);
+        }
+        RuntimeError("CreateCriterionAccumulator: unsupported node element type!");
+    }
 };
 
-}}}
+} // namespace CNTK
+} // namespace MSR
+} // namespace Microsoft

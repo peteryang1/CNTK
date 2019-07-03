@@ -153,10 +153,10 @@ public:
     }
 
     // This can only be used for initialization of half
-	operator half() const
-	{
-		return (half) ((double) *this);
-	}
+    operator half() const
+    {
+        return (half)((double) *this);
+    }
 
 private:
     long tolong() const

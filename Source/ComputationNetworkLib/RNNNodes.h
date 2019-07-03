@@ -33,8 +33,8 @@ class OptimizedRNNStackNode : public ComputationNode<ElemType>, public NumInputs
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"OptimizedRNNStack"; }
     using Base::OperationName;
-	template <typename NodeDataType> friend class OptimizedRNNStackNode;
-	DeclareTypedDuplicate(OptimizedRNNStackNode)
+    template <typename NodeDataType> friend class OptimizedRNNStackNode;
+    DeclareTypedDuplicate(OptimizedRNNStackNode)
 
 public:
     OptimizedRNNStackNode(DEVICEID_TYPE deviceId, const wstring& name);
@@ -42,13 +42,13 @@ public:
     OptimizedRNNStackNode(DEVICEID_TYPE deviceId, const std::wstring& name, bool bidirectional, size_t numLayers, size_t hiddenSize, const std::wstring& recurrentOp);
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override;
-	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
+    virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
     virtual void Save(File& fstream) const;
     virtual void Load(File& fstream, size_t modelVersion) override;
 
 private:
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
 public:
     virtual void /*ComputationNode::*/ ForwardProp(const FrameRange& fr) override;

@@ -99,7 +99,7 @@ public:
         m_net->StartEvaluateMinibatchLoop(evalNodes);
 
         std::vector<Matrix<ElemType>*> learnParamsGradients;
-		std::vector<TypedMatrixPtr> typedLearnParamsGradients;
+        std::vector<TypedMatrixPtr> typedLearnParamsGradients;
         DataReaderHelpers::SubminibatchDispatcher<ElemType> smbDispatcher;
         size_t numSubminibatchesNeeded = DataReaderHelpers::GetNumSubminibatchesNeeded<ElemType>(dataReader, m_maxSamplesInRAM, m_numSubminiBatches, mbSize);
 
@@ -109,10 +109,10 @@ public:
         if (numSubminibatchesNeeded > 1)
             smbDispatcher.Init(m_net, learnableNodes, criterionNodes, evalNodes);
 
-		shared_ptr<CriterionAccumulatorBase> localEpochEvalErrorsPtr = CriterionAccumulatorFactory::CreateCriterionAccumulator<ElemType>(
-			evalNodes, m_net->GetDeviceId(),
-			{evalNodesWhichAccumulateResult.begin(), evalNodesWhichAccumulateResult.end()});
-		CriterionAccumulatorBase & localEpochEvalErrors = *localEpochEvalErrorsPtr;
+        shared_ptr<CriterionAccumulatorBase> localEpochEvalErrorsPtr = CriterionAccumulatorFactory::CreateCriterionAccumulator<ElemType>(
+            evalNodes, m_net->GetDeviceId(),
+            {evalNodesWhichAccumulateResult.begin(), evalNodesWhichAccumulateResult.end()});
+        CriterionAccumulatorBase& localEpochEvalErrors = *localEpochEvalErrorsPtr;
 
         const size_t numIterationsBeforePrintingProgress = 100;
         size_t numItersSinceLastPrintOfProgress = 0;
@@ -167,7 +167,7 @@ public:
                         DistGradHeader::Destroy(ptr);
                     });
 
-					m_distGradAgg = GetSimpleDistGradAggregator<ElemType>(m_mpi, false /*useAsyncAggregation*/, m_net->GetDeviceId(), 0 /*syncStatsTrace*/);
+                    m_distGradAgg = GetSimpleDistGradAggregator<ElemType>(m_mpi, false /*useAsyncAggregation*/, m_net->GetDeviceId(), 0 /*syncStatsTrace*/);
                 }
 
                 m_gradHeader->numEvalNode = evalNodes.size();
@@ -180,11 +180,11 @@ public:
                 // TODO: We are reusing the aggregation logic inside SimpleDistGradAggregator, which has a heavy dependency
                 // on the gradient matrix. At some point we should refactor the aggregator class to be able to only calculating
                 // eval results and then remove this hack.
-				if (std::is_same<ElemType, half>::value && typedLearnParamsGradients.empty())
-				{
-					auto matrix = std::make_shared<Matrix<ElemType>>((DEVICEID_TYPE)m_net->GetDeviceId());
-					typedLearnParamsGradients.push_back(TypedMatrixPtr(matrix));
-				}
+                if (std::is_same<ElemType, half>::value && typedLearnParamsGradients.empty())
+                {
+                    auto matrix = std::make_shared<Matrix<ElemType>>((DEVICEID_TYPE) m_net->GetDeviceId());
+                    typedLearnParamsGradients.push_back(TypedMatrixPtr(matrix));
+                }
                 else if (learnParamsGradients.empty())
                 {
                     Matrix<ElemType>* matrix = new Matrix<ElemType>((DEVICEID_TYPE)m_net->GetDeviceId());
@@ -193,11 +193,11 @@ public:
 
                 // Using SimpleDistAggregator for eval results only. At some point we should rename the class to be just
                 // IDistAggregator and SimpleDistAggregator.
-				bool samplesProcessed;
-				if (std::is_same<ElemType, half>::value)
-					samplesProcessed = m_distGradAgg->AggregateGradients(typedLearnParamsGradients, m_gradHeader.get(), /*resetState =*/ false);
-				else
-					samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), /*resetState =*/ false);
+                bool samplesProcessed;
+                if (std::is_same<ElemType, half>::value)
+                    samplesProcessed = m_distGradAgg->AggregateGradients(typedLearnParamsGradients, m_gradHeader.get(), /*resetState =*/false);
+                else
+                    samplesProcessed = m_distGradAgg->AggregateGradients(learnParamsGradients, m_gradHeader.get(), /*resetState =*/false);
                 noMoreSamplesToProcess = !samplesProcessed;
 
                 aggregateNumSamplesWithLabel = m_gradHeader->numSamplesWithLabel;

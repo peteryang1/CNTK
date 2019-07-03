@@ -462,7 +462,7 @@ public:
     // -----------------------------------------------------------------------
 
     ComputationNodeBasePtr CopyNode(const ComputationNetwork& fromNet, const std::wstring fromName, std::wstring toName, const CopyNodeFlags flags);
-	ComputationNodeBasePtr TypedCopyNode(const ComputationNetwork& fromNet, const std::wstring fromName, std::wstring toName, const ComputationNodeDataType dataType, const CopyNodeFlags flags);
+    ComputationNodeBasePtr TypedCopyNode(const ComputationNetwork& fromNet, const std::wstring fromName, std::wstring toName, const ComputationNodeDataType dataType, const CopyNodeFlags flags);
     void CopySubTree(const ComputationNetwork& fromNet, const std::wstring fromName, std::wstring toNamePrefix, const CopyNodeFlags flags);
     void CopyInputs(const std::wstring fromName, std::wstring toName);
     void RenameNode(const std::wstring& nodeNameOrig, const std::wstring& nodeNameNew);
@@ -652,10 +652,10 @@ private:
     }
 
 public:
-	std::vector<ComputationNodeBasePtr>& GetNodeGroupByTag(const std::wstring& groupTag)
-	{
-		return GetNodeGroup(groupTag);
-	}
+    std::vector<ComputationNodeBasePtr>& GetNodeGroupByTag(const std::wstring& groupTag)
+    {
+        return GetNodeGroup(groupTag);
+    }
     // add a node to a node group
     void AddToNodeGroup(const std::wstring& groupTag, const ComputationNodeBasePtr& node)
     {

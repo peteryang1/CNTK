@@ -15,10 +15,10 @@ namespace Microsoft { namespace MSR { namespace CNTK {
 
 template <class ElemType>
 std::shared_ptr<IDistGradAggregator<ElemType>> GetSimpleDistGradAggregator(
-	const MPIWrapperPtr& mpi,
-	bool useAsyncAggregation,
-	int deviceId,
-	int syncStatsTrace,
-	size_t packThresholdSizeInBytes = DEFAULT_PACK_THRESHOLD_SIZE_IN_BYTES);
+    const MPIWrapperPtr& mpi,
+    bool useAsyncAggregation,
+    int deviceId,
+    int syncStatsTrace,
+    size_t packThresholdSizeInBytes = DEFAULT_PACK_THRESHOLD_SIZE_IN_BYTES);
 
 } } }

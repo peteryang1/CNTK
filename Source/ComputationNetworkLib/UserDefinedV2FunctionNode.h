@@ -28,7 +28,7 @@ class UserDefinedV2FunctionNode final : public ComputationNode<ElemType>, public
     static const std::wstring TypeName() { return L"UserDefinedV2Function"; }
 
     friend class OutputMultiplexerNode<ElemType>;
-	DeclareTypedDuplicate(UserDefinedV2FunctionNode)
+    DeclareTypedDuplicate(UserDefinedV2FunctionNode)
 
 public:
     UserDefinedV2FunctionNode(DEVICEID_TYPE deviceId, const wstring& name, const ::CNTK::FunctionPtr& externalFunction = nullptr)

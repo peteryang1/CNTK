@@ -89,27 +89,27 @@ protected:
     }
 
 private:
-    template<typename ElemType>
+    template <typename ElemType>
     static ElemType* ptr(Matrix<ElemType>& src)
     {
-		ElemType* ret = src.Data();
-		if (ret == nullptr)
-		{
-			fprintf(stderr, "Find nullptr in Data() function of matrix\n");
-		}
-		return ret;
+        ElemType* ret = src.Data();
+        if (ret == nullptr)
+        {
+            fprintf(stderr, "Find nullptr in Data() function of matrix\n");
+        }
+        return ret;
         //return src.Data();
     }
 
-    template<typename ElemType>
+    template <typename ElemType>
     static const ElemType* ptr(const Matrix<ElemType>& src)
     {
-		const ElemType* ret = src.Data();
-		if (ret == nullptr)
-		{
-			fprintf(stderr, "Find nullptr in Data() function of matrix\n");
-		}
-		return ret;
+        const ElemType* ret = src.Data();
+        if (ret == nullptr)
+        {
+            fprintf(stderr, "Find nullptr in Data() function of matrix\n");
+        }
+        return ret;
         //return src.Data();
     }
 

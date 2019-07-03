@@ -159,13 +159,13 @@ public:
         m_constInputGateValue  = config("constInputGateValue",  "false");
         m_constOutputGateValue = config("constOutputGateValue", "false");
 
-		ElemType forgetGateInitVal	= config("forgetGateInitVal", "-1");
-		ElemType inputGateInitVal	= config("inputGateInitVal",  "-1");
-		ElemType outputGateInitVal	= config("outputGateInitVal", "-1");
+        ElemType forgetGateInitVal = config("forgetGateInitVal", "-1");
+        ElemType inputGateInitVal = config("inputGateInitVal", "-1");
+        ElemType outputGateInitVal = config("outputGateInitVal", "-1");
 
-		m_forgetGateInitVal = forgetGateInitVal;
-		m_inputGateInitVal = inputGateInitVal;
-		m_outputGateInitVal = outputGateInitVal;
+        m_forgetGateInitVal = forgetGateInitVal;
+        m_inputGateInitVal = inputGateInitVal;
+        m_outputGateInitVal = outputGateInitVal;
 
         m_sparse_input = config("sparseinput", "false");
 

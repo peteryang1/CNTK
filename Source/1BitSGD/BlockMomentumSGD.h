@@ -93,9 +93,9 @@ namespace Microsoft { namespace MSR { namespace CNTK {
                             m_resetSGDMomentumAfterAggregation ? "resetting SGD momentum after sync." : "."
                 );
         }
-        /*virtual*/ void OnEpochEnd(const std::list<ComputationNodeBasePtr>& LearnableNodes, 
-            std::list<MatrixBasePtr>&					smoothedGradient,
-            size_t                                      samplesSinceLastSync) override
+        /*virtual*/ void OnEpochEnd(const std::list<ComputationNodeBasePtr>& LearnableNodes,
+                                    std::list<MatrixBasePtr>& smoothedGradient,
+                                    size_t samplesSinceLastSync) override
         {
             Base::OnEpochEnd(LearnableNodes, smoothedGradient, samplesSinceLastSync);
         }
@@ -104,8 +104,7 @@ namespace Microsoft { namespace MSR { namespace CNTK {
             const std::list<ComputationNodeBasePtr>& learnableNodes,
             std::list<MatrixBasePtr>& smoothedGradient,
             size_t& totalSamplesProcessed,
-            float& secondsOnCommunication
-            ) override
+            float& secondsOnCommunication) override
         {
             //----------------------------------------
             // 1. communicate with other nodes to negotiate contribution weights
@@ -183,9 +182,9 @@ namespace Microsoft { namespace MSR { namespace CNTK {
             {
                 for (auto sg : smoothedGradient)
                 {
-					auto x = dynamic_pointer_cast<Matrix<ElemType>>(sg);
-					if (x)
-						x->SetValue((ElemType)0);
+                    auto x = dynamic_pointer_cast<Matrix<ElemType>>(sg);
+                    if (x)
+                        x->SetValue((ElemType) 0);
                 }
             }
         }

@@ -72,33 +72,33 @@ template <class ElemType>
 template <typename NodeDataType>
 void RandomSampleNodeBase<ElemType>::TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
 {
-	auto node = dynamic_pointer_cast<RandomSampleNodeBase<NodeDataType>>(nodeP);
-	node->m_allowDuplicates = m_allowDuplicates;
-	node->m_sizeOfSampledSet = m_sizeOfSampledSet;
-	node->SetRngState(GetRngSeed(), GetRngOffset());
+    auto node = dynamic_pointer_cast<RandomSampleNodeBase<NodeDataType>>(nodeP);
+    node->m_allowDuplicates = m_allowDuplicates;
+    node->m_sizeOfSampledSet = m_sizeOfSampledSet;
+    node->SetRngState(GetRngSeed(), GetRngOffset());
 }
 
 template<class ElemType>
 void RandomSampleNodeBase<ElemType>::TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const
 {
-	Base::TypedCopyTo(nodeP, newName, dataType, flags);
-	if (flags & CopyNodeFlags::copyNodeValue)
-	{
-		switch (dataType)
-		{
-		case ComputationNodeDataType::DOUBLE:
-			TypedCopyToImpl<double>(nodeP);
-			break;
-		case ComputationNodeDataType::FLOAT:
-			TypedCopyToImpl<float>(nodeP);
-			break;
-		case ComputationNodeDataType::HALF:
-			TypedCopyToImpl<half>(nodeP);
-			break;
-		default:
-			RuntimeError("Type is not supported.");
-		}
-	}
+    Base::TypedCopyTo(nodeP, newName, dataType, flags);
+    if (flags & CopyNodeFlags::copyNodeValue)
+    {
+        switch (dataType)
+        {
+        case ComputationNodeDataType::DOUBLE:
+            TypedCopyToImpl<double>(nodeP);
+            break;
+        case ComputationNodeDataType::FLOAT:
+            TypedCopyToImpl<float>(nodeP);
+            break;
+        case ComputationNodeDataType::HALF:
+            TypedCopyToImpl<half>(nodeP);
+            break;
+        default:
+            RuntimeError("Type is not supported.");
+        }
+    }
 }
 
 template<class ElemType>

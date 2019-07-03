@@ -88,8 +88,8 @@ DataReader::DataReader(const ConfigRecordType& config)
     assert(m_dataReaders.empty());
 
     string precision = config(L"precision", "float");
-	if (precision == "half") // we use float input data for mixed precision training.
-		precision = "float";
+    if (precision == "half") // we use float input data for mixed precision training.
+        precision = "float";
 
     bool hasMultipleReaders = config.Exists(L"readers");
     // In case when deserializers are specified, use the new logic to compose them.

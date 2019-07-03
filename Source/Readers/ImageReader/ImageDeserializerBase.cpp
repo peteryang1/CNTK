@@ -40,8 +40,8 @@ using namespace Microsoft::MSR::CNTK;
             static_cast<int>(labelNames.size()));
 
         string precision = config("precision", "float");
-		if (AreEqualIgnoreCase(precision, "half") || AreEqualIgnoreCase(precision, "float16"))
-			precision = "float";
+        if (AreEqualIgnoreCase(precision, "half") || AreEqualIgnoreCase(precision, "float16"))
+            precision = "float";
         m_precision = AreEqualIgnoreCase(precision, "float") ? DataType::Float : DataType::Double;
         m_verbosity = config(L"verbosity", 0);
 

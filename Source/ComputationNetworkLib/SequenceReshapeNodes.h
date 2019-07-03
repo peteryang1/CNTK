@@ -161,7 +161,7 @@ class ToSequenceNode : public ToSequenceNodeBase<ElemType>
 
     static const std::wstring DefaultToSequenceNodeDynamicAxisName() { return L"ToSequenceNodeAxis"; }
 
-	DeclareTypedDuplicate(ToSequenceNode)
+    DeclareTypedDuplicate(ToSequenceNode)
 public:
     DeclareConstructorFromConfig(ToSequenceNode);
     ToSequenceNode(DEVICEID_TYPE deviceId, const wstring& name, const wstring& dynamicAxisName = DefaultToSequenceNodeDynamicAxisName())
@@ -245,7 +245,7 @@ class ToSequenceLikeNode : public ToSequenceNodeBase<ElemType>
     typedef ToSequenceNodeBase<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"ToSequenceLike"; }
 
-	DeclareTypedDuplicate(ToSequenceLikeNode)
+    DeclareTypedDuplicate(ToSequenceLikeNode)
 
 public:
     DeclareConstructorFromConfig(ToSequenceLikeNode);
@@ -313,7 +313,7 @@ class UnpackSequenceNode : public ComputationNodeNonLooping<ElemType>, public Mu
 {
     typedef ComputationNodeNonLooping<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"UnpackSequence"; }
-	DeclareTypedDuplicate(UnpackSequenceNode)
+    DeclareTypedDuplicate(UnpackSequenceNode)
 
 public:
     DeclareConstructorFromConfig(UnpackSequenceNode);

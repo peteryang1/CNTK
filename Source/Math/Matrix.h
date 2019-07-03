@@ -49,12 +49,11 @@ enum MatrixType
 
 enum class MatrixElemType
 {
-	FLOAT,
-	DOUBLE,
-	HALF,
-	UNKNOWN
+    FLOAT,
+    DOUBLE,
+    HALF,
+    UNKNOWN
 };
-
 
 // avoid pulling in these header files for consumers of this class
 template <class ElemType> class GPUMatrix;

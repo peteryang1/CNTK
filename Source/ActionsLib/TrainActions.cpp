@@ -142,12 +142,12 @@ shared_ptr<Object> MakeRuntimeObject<TrainAction>(const IConfigRecordPtr configp
 {
     const IConfigRecord& config = *configp;
     wstring precision = config[L"precision"]; // dispatch on ElemType
-	if (precision == L"float")
-		DoTrain<IConfigRecord, float>(config);
-	else if (precision == L"double")
-		DoTrain<IConfigRecord, double>(config);
-	else if (precision == L"half")
-		DoTrain<IConfigRecord, half>(config);
+    if (precision == L"float")
+        DoTrain<IConfigRecord, float>(config);
+    else if (precision == L"double")
+        DoTrain<IConfigRecord, double>(config);
+    else if (precision == L"half")
+        DoTrain<IConfigRecord, half>(config);
     else
         RuntimeError("invalid value '%ls' for 'precision', must be 'float' , 'half' or 'double'", precision.c_str());
 

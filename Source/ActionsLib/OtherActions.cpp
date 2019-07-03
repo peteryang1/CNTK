@@ -569,104 +569,105 @@ template void DoTopologyPlot<double>(const ConfigParameters& config);
 // DoDataTypeConvert() - implements CNTK "convert" command
 // ===========================================================================
 
-// Convert model from half to float 
+// Convert model from half to float
 // TODO: more data type conversion
 template <typename ElemType>
 void DoDataTypeConvert(const ConfigParameters& config)
 {
-	wstring sourceModelPath = config(L"sourceModelPath"); // Path to model for conversion.
-	wstring targetModelPath = config(L"targetModelPath", sourceModelPath + L"_conversion"); // Path to result model
-	wstring targetPrecision = config(L"targetPrecision", L"float"); // Target model precision
-	DEVICEID_TYPE deviceId = config(L"deviceId", 0); // use GPU for conversion, because FP16 convolution is only supported via cuDNN.
-	size_t targetModelVersion = config(L"targetModelVersion", CURRENT_CNTK_MODEL_VERSION);
+    wstring sourceModelPath = config(L"sourceModelPath");                                   // Path to model for conversion.
+    wstring targetModelPath = config(L"targetModelPath", sourceModelPath + L"_conversion"); // Path to result model
+    wstring targetPrecision = config(L"targetPrecision", L"float");                         // Target model precision
+    DEVICEID_TYPE deviceId = config(L"deviceId", 0);                                        // use GPU for conversion, because FP16 convolution is only supported via cuDNN.
+    size_t targetModelVersion = config(L"targetModelVersion", CURRENT_CNTK_MODEL_VERSION);
 
-	ComputationNetworkPtr sourceNetworkPtr = ComputationNetwork::CreateFromFile<ElemType>(deviceId, sourceModelPath);
-	ComputationNetworkPtr targetNetworkPtr = make_shared<ComputationNetwork>(deviceId);
+    ComputationNetworkPtr sourceNetworkPtr = ComputationNetwork::CreateFromFile<ElemType>(deviceId, sourceModelPath);
+    ComputationNetworkPtr targetNetworkPtr = make_shared<ComputationNetwork>(deviceId);
 
-	// get dataType
-	fprintf(stderr, "\nCovert model to precision %ls\n", targetPrecision.c_str());
-	ComputationNodeDataType targetDataType;
-	if (EqualCI(targetPrecision, L"float"))
-		targetDataType = ComputationNodeDataType::FLOAT;
-	else if (EqualCI(targetPrecision, L"double"))
-		targetDataType = ComputationNodeDataType::DOUBLE;
-	else if (EqualCI(targetPrecision, L"half"))
-		targetDataType = ComputationNodeDataType::HALF;
-	else
-		RuntimeError("Type is not supported");
+    // get dataType
+    fprintf(stderr, "\nCovert model to precision %ls\n", targetPrecision.c_str());
+    ComputationNodeDataType targetDataType;
+    if (EqualCI(targetPrecision, L"float"))
+        targetDataType = ComputationNodeDataType::FLOAT;
+    else if (EqualCI(targetPrecision, L"double"))
+        targetDataType = ComputationNodeDataType::DOUBLE;
+    else if (EqualCI(targetPrecision, L"half"))
+        targetDataType = ComputationNodeDataType::HALF;
+    else
+        RuntimeError("Type is not supported");
 
-	// copy all nodes
-	std::vector<ComputationNodeBasePtr> allNodesInSource = sourceNetworkPtr->GetAllNodes();
-	for (const auto& sourceNode : allNodesInSource)
-	{
-		if (EqualCI(sourceNode->OperationName(), L"Cast")) // in pure float/double model, we do not need cast any more.
-		{
-			fprintf(stderr, "Remove Cast Node \"%ls\"\n", sourceNode->NodeName().c_str());
-			continue;
-		}
-		auto targetNode = sourceNode->TypedDuplicate(targetDataType, sourceNode->NodeName(), CopyNodeFlags::copyNodeValue);
-		fprintf(stderr, "Copying node \"%ls\" with shape %s\n", targetNode->NodeDescription().c_str(), targetNode->ShapeDescription().c_str());
-		targetNetworkPtr->AddNodeToNet(targetNode);
-	}
+    // copy all nodes
+    std::vector<ComputationNodeBasePtr> allNodesInSource = sourceNetworkPtr->GetAllNodes();
+    for (const auto& sourceNode : allNodesInSource)
+    {
+        if (EqualCI(sourceNode->OperationName(), L"Cast")) // in pure float/double model, we do not need cast any more.
+        {
+            fprintf(stderr, "Remove Cast Node \"%ls\"\n", sourceNode->NodeName().c_str());
+            continue;
+        }
+        auto targetNode = sourceNode->TypedDuplicate(targetDataType, sourceNode->NodeName(), CopyNodeFlags::copyNodeValue);
+        fprintf(stderr, "Copying node \"%ls\" with shape %s\n", targetNode->NodeDescription().c_str(), targetNode->ShapeDescription().c_str());
+        targetNetworkPtr->AddNodeToNet(targetNode);
+    }
 
-	// copy all relations
-	for (const auto& sourceNode : allNodesInSource)
-	{
-		if (EqualCI(sourceNode->OperationName(), L"Cast")) // in pure float/double model, we do not need cast any more.
-			continue;
+    // copy all relations
+    for (const auto& sourceNode : allNodesInSource)
+    {
+        if (EqualCI(sourceNode->OperationName(), L"Cast")) // in pure float/double model, we do not need cast any more.
+            continue;
 
-		size_t numInput = sourceNode->GetNumInputs();
-		std::vector<ComputationNodeBasePtr> targetInputs(numInput);
-		const std::vector<ComputationNodeBasePtr>& sourceInputs = sourceNode->GetInputs();
+        size_t numInput = sourceNode->GetNumInputs();
+        std::vector<ComputationNodeBasePtr> targetInputs(numInput);
+        const std::vector<ComputationNodeBasePtr>& sourceInputs = sourceNode->GetInputs();
 
-		for (size_t i = 0; i < numInput; ++i)
-		{
-			if (EqualCI(sourceInputs[i]->OperationName(), L"Cast")) // remove cast node from graph
-			{
-				wstring actualInputName = sourceInputs[i]->Input(0)->NodeName();
-				targetInputs[i] = targetNetworkPtr->GetNodeFromName(actualInputName);
-			}
-			else
-				targetInputs[i] = targetNetworkPtr->GetNodeFromName(sourceInputs[i]->NodeName());
-		}
+        for (size_t i = 0; i < numInput; ++i)
+        {
+            if (EqualCI(sourceInputs[i]->OperationName(), L"Cast")) // remove cast node from graph
+            {
+                wstring actualInputName = sourceInputs[i]->Input(0)->NodeName();
+                targetInputs[i] = targetNetworkPtr->GetNodeFromName(actualInputName);
+            }
+            else
+                targetInputs[i] = targetNetworkPtr->GetNodeFromName(sourceInputs[i]->NodeName());
+        }
 
-		auto targetNode = targetNetworkPtr->GetNodeFromName(sourceNode->NodeName());
-		targetNode->AttachInputs(targetInputs);
-	}
+        auto targetNode = targetNetworkPtr->GetNodeFromName(sourceNode->NodeName());
+        targetNode->AttachInputs(targetInputs);
+    }
 
-	// copy all special nodes
-	const std::vector<std::wstring> nodeGroupNames{ L"feature", L"label", L"criterion", L"evaluation", L"output" };
-	for (const auto& groupName : nodeGroupNames)
-	{
-		fprintf(stderr, "\nProcessing node group %ls\n", groupName.c_str());
-		const auto& sourceNodesInGroup = sourceNetworkPtr->GetNodeGroupByTag(groupName);
-		if (sourceNodesInGroup.empty()) continue;
+    // copy all special nodes
+    const std::vector<std::wstring> nodeGroupNames{L"feature", L"label", L"criterion", L"evaluation", L"output"};
+    for (const auto& groupName : nodeGroupNames)
+    {
+        fprintf(stderr, "\nProcessing node group %ls\n", groupName.c_str());
+        const auto& sourceNodesInGroup = sourceNetworkPtr->GetNodeGroupByTag(groupName);
+        if (sourceNodesInGroup.empty())
+            continue;
 
-		for (const auto& sourceNode : sourceNodesInGroup)
-		{
-			ComputationNodeBasePtr actualSourceNode = nullptr;
-			if (EqualCI(sourceNode->OperationName(), L"Cast"))
-				actualSourceNode = sourceNode->Input(0);
-			else
-				actualSourceNode = sourceNode;
+        for (const auto& sourceNode : sourceNodesInGroup)
+        {
+            ComputationNodeBasePtr actualSourceNode = nullptr;
+            if (EqualCI(sourceNode->OperationName(), L"Cast"))
+                actualSourceNode = sourceNode->Input(0);
+            else
+                actualSourceNode = sourceNode;
 
-			ComputationNodeBasePtr targetNode = targetNetworkPtr->GetNodeFromName(actualSourceNode->NodeName());
-			targetNetworkPtr->AddToNodeGroup(groupName, targetNode);
-		}
-	}
+            ComputationNodeBasePtr targetNode = targetNetworkPtr->GetNodeFromName(actualSourceNode->NodeName());
+            targetNetworkPtr->AddToNodeGroup(groupName, targetNode);
+        }
+    }
 
-	// make sure source network is inactive
-	sourceNetworkPtr->InvalidateCompiledNetwork();
+    // make sure source network is inactive
+    sourceNetworkPtr->InvalidateCompiledNetwork();
 
-	// compile target network
-	targetNetworkPtr->CompileNetwork();
+    // compile target network
+    targetNetworkPtr->CompileNetwork();
 
-	// save to FS
-	fprintf(stderr, "\nSave converted model to %ls\n", targetModelPath.c_str());
-	targetNetworkPtr->Save(targetModelPath, FileOptions::fileOptionsBinary, targetModelVersion);
+    // save to FS
+    fprintf(stderr, "\nSave converted model to %ls\n", targetModelPath.c_str());
+    targetNetworkPtr->Save(targetModelPath, FileOptions::fileOptionsBinary, targetModelVersion);
 }
 
 template void DoDataTypeConvert<half>(const ConfigParameters& config);
-// TODO: 
+// TODO:
 // template void DoDataTypeConvert<float>(const ConfigParameters& config);
 // template void DoDataTypeConvert<double>(const ConfigParameters& config);

@@ -272,8 +272,8 @@ public:
     virtual void ProcessOptionalParameters(NDLNode<ElemType>* node) override
     {
         vector<NDLNode<ElemType>*> params = node->GetParameters(true); // get all the optional parameters only
-		ComputationNodeBase *compNodePtr = (ComputationNodeBase *)(node->GetEvalValue());
-		ComputationNodeBasePtr compNode = compNodePtr ? compNodePtr->shared_from_this() : nullptr;
+        ComputationNodeBase* compNodePtr = (ComputationNodeBase*) (node->GetEvalValue());
+        ComputationNodeBasePtr compNode = compNodePtr ? compNodePtr->shared_from_this() : nullptr;
         std::string empty;
 
         // loop through all the optional parameters processing them as necessary

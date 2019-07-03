@@ -17,64 +17,63 @@
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
-	template <class ElemType>
-	std::shared_ptr<IDistGradAggregator<ElemType>> GetSimpleDistGradAggregator(
-		const MPIWrapperPtr& mpi,
-		bool useAsyncAggregation,
-		int deviceId,
-		int syncStatsTrace,
-		size_t packThresholdSizeInBytes)
-	{
-		if (Globals::UseV2Aggregator())
-			return std::make_shared<V2SimpleDistGradAggregator<ElemType>>(
-				mpi,
-				useAsyncAggregation,
-				deviceId,
-				syncStatsTrace,
-				::CNTK::MPICommunicator(packThresholdSizeInBytes));
-		else
-			return std::make_shared<SimpleDistGradAggregator<ElemType>>(
-				mpi,
-				useAsyncAggregation,
-				deviceId,
-				syncStatsTrace,
-				packThresholdSizeInBytes);
-	}
+template <class ElemType>
+std::shared_ptr<IDistGradAggregator<ElemType>> GetSimpleDistGradAggregator(
+    const MPIWrapperPtr& mpi,
+    bool useAsyncAggregation,
+    int deviceId,
+    int syncStatsTrace,
+    size_t packThresholdSizeInBytes)
+{
+    if (Globals::UseV2Aggregator())
+        return std::make_shared<V2SimpleDistGradAggregator<ElemType>>(
+            mpi,
+            useAsyncAggregation,
+            deviceId,
+            syncStatsTrace,
+            ::CNTK::MPICommunicator(packThresholdSizeInBytes));
+    else
+        return std::make_shared<SimpleDistGradAggregator<ElemType>>(
+            mpi,
+            useAsyncAggregation,
+            deviceId,
+            syncStatsTrace,
+            packThresholdSizeInBytes);
+}
 
+template <>
+std::shared_ptr<IDistGradAggregator<half>> GetSimpleDistGradAggregator<half>(
+    const MPIWrapperPtr& mpi,
+    bool useAsyncAggregation,
+    int deviceId,
+    int syncStatsTrace,
+    size_t packThresholdSizeInBytes)
+{
+    if (Globals::UseV2Aggregator())
+    {
+        fprintf(stderr, "Currently we do not support V2 aggregator for half.");
+        NOT_IMPLEMENTED;
+    }
+    else
+        return std::make_shared<SimpleDistGradAggregator<half>>(
+            mpi,
+            useAsyncAggregation,
+            deviceId,
+            syncStatsTrace,
+            packThresholdSizeInBytes);
+}
 
-	template <>
-	std::shared_ptr<IDistGradAggregator<half>> GetSimpleDistGradAggregator<half>(
-		const MPIWrapperPtr& mpi,
-		bool useAsyncAggregation,
-		int deviceId,
-		int syncStatsTrace,
-		size_t packThresholdSizeInBytes)
-	{
-		if (Globals::UseV2Aggregator())
-		{
-			fprintf(stderr, "Currently we do not support V2 aggregator for half.");
-			NOT_IMPLEMENTED;
-		}
-		else 
-			return std::make_shared<SimpleDistGradAggregator<half>>(
-				mpi,
-				useAsyncAggregation,
-				deviceId,
-				syncStatsTrace,
-				packThresholdSizeInBytes);
-	}
+template std::shared_ptr<IDistGradAggregator<float>> GetSimpleDistGradAggregator(
+    const MPIWrapperPtr& mpi,
+    bool useAsyncAggregation,
+    int deviceId,
+    int syncStatsTrace,
+    size_t packThresholdSizeInBytes);
 
-	template std::shared_ptr<IDistGradAggregator<float>> GetSimpleDistGradAggregator(
-		const MPIWrapperPtr& mpi,
-		bool useAsyncAggregation,
-		int deviceId,
-		int syncStatsTrace,
-		size_t packThresholdSizeInBytes);
-
-	template std::shared_ptr<IDistGradAggregator<double>> GetSimpleDistGradAggregator(
-		const MPIWrapperPtr& mpi,
-		bool useAsyncAggregation,
-		int deviceId,
-		int syncStatsTrace,
-		size_t packThresholdSizeInBytes);
+template std::shared_ptr<IDistGradAggregator<double>> GetSimpleDistGradAggregator(
+    const MPIWrapperPtr& mpi,
+    bool useAsyncAggregation,
+    int deviceId,
+    int syncStatsTrace,
+    size_t packThresholdSizeInBytes);
 } } }

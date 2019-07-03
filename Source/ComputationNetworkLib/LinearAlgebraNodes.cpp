@@ -91,33 +91,33 @@ void EpochAccumulatorNode<ElemType>::CopyAccumulatorToValue()
 template <class ElemType>
 void EpochAccumulatorNode<ElemType>::TypedCopyTo(ComputationNodeBasePtr nodeP, const wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const /*override*/
 {
-	Base::TypedCopyTo(nodeP, newName, dataType, flags);
-	if (flags & CopyNodeFlags::copyNodeValue)
-	{
-		switch (dataType)
-		{
-		case ComputationNodeDataType::DOUBLE:
-			TypedCopyToImpl<double>(nodeP);
-			break;
-		case ComputationNodeDataType::FLOAT:
-			TypedCopyToImpl<float>(nodeP);
-			break;
-		case ComputationNodeDataType::HALF:
-			TypedCopyToImpl<half>(nodeP);
-			break;
-		default:
-			RuntimeError("Type is not supported.");
-		}
-	}
+    Base::TypedCopyTo(nodeP, newName, dataType, flags);
+    if (flags & CopyNodeFlags::copyNodeValue)
+    {
+        switch (dataType)
+        {
+        case ComputationNodeDataType::DOUBLE:
+            TypedCopyToImpl<double>(nodeP);
+            break;
+        case ComputationNodeDataType::FLOAT:
+            TypedCopyToImpl<float>(nodeP);
+            break;
+        case ComputationNodeDataType::HALF:
+            TypedCopyToImpl<half>(nodeP);
+            break;
+        default:
+            RuntimeError("Type is not supported.");
+        }
+    }
 }
 
 template <class ElemType>
 template <typename NodeDataType>
 void EpochAccumulatorNode<ElemType>::TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
 {
-	auto node = nodeP->As<EpochAccumulatorNode<NodeDataType>>();
-	node->m_numSamples = m_numSamples;
-	node->m_accumulator->CastAssignValuesOf(*m_accumulator);
+    auto node = nodeP->As<EpochAccumulatorNode<NodeDataType>>();
+    node->m_numSamples = m_numSamples;
+    node->m_accumulator->CastAssignValuesOf(*m_accumulator);
 }
 
 template <class ElemType>

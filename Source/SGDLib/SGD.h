@@ -80,9 +80,9 @@ enum class AdjustType : int
     Inv,
     Exp,
     Step,
-	Cosine,
-	Linear_Cosine,
-	Noisy_Linear_Cosine
+    Cosine,
+    Linear_Cosine,
+    Noisy_Linear_Cosine
 };
 
 
@@ -126,10 +126,10 @@ struct LRAPIInfo
     double base_;
     double gamma;
     double power;
-	double beta;
-	double num_periods;
-	double initial_variance;
-	double variance_decay;
+    double beta;
+    double num_periods;
+    double initial_variance;
+    double variance_decay;
     size_t numItersToShowLR;
     size_t numItersToSaveModel;
     bool reachMaxIter = false;
@@ -370,8 +370,8 @@ protected:
 
     LRAPIInfo m_lrapiInfo;
 
-	// mixed precision training parameters
-	float m_mixedTrainLossScaleFactor;
+    // mixed precision training parameters
+    float m_mixedTrainLossScaleFactor;
 };
 
 template <class ElemType>
@@ -436,7 +436,10 @@ public:
                const DEVICEID_TYPE deviceID, const bool makeMode = true);
 
 	// mixed precision training
-	bool UseMixedPrecisionTraining() { return std::is_same<ElemType, half>::value; }
+    bool UseMixedPrecisionTraining()
+    {
+        return std::is_same<ElemType, half>::value;
+    }
 
 protected:
 
@@ -563,31 +566,32 @@ protected:
 
     void InitDistGradAgg(int numEvalNodes, int numGradientBits, int deviceId, int traceLevel);
     void InitModelAggregationHandler(int traceLevel, DEVICEID_TYPE devID);
+
 public:
     // UpdateWeights() - actual weight update, implementing various update rules
-	template <class ActualElemType = ElemType>
+    template <class ActualElemType = ElemType>
     void UpdateWeightsImpl(Matrix<ActualElemType>& functionValues, Matrix<ActualElemType>& gradientValues,
-						   Matrix<ActualElemType>& smoothedGradient, double& smoothedCount,
-                       const double learnRatePerSample, const double momentumPerSample,
-                       size_t actualMBSize,
-                       const double L2RegWeight, const double L1RegWeight,
-                       const bool needAveMultiplier,
-                       const bool useNesterovMomentum,
-                       const bool disableMomentumUnitGain) const;
-	
-	template <class NodeElemType>
-	void UpdateWeights(std::shared_ptr<ComputationNode<NodeElemType>> learnableNode,
-					   MatrixBasePtr smoothedGradient, double& smoothedCount,
-					   shared_ptr<ComputationNetwork> net,
-					   const double learnRatePerSample,
-					   const int epochNumber,
-					   size_t numSamplesInMinibatch);
-	void MixedUpdateWeights(std::shared_ptr<ComputationNode<half>> learnableNode,
-						    MatrixBasePtr smoothedGradient, double& smoothedCounts,
-						    shared_ptr<ComputationNetwork> net,
-						    const double learnRatePerSample,
-						    const int epochNumber,
-						    size_t numSamplesInMinibatch);
+                           Matrix<ActualElemType>& smoothedGradient, double& smoothedCount,
+                           const double learnRatePerSample, const double momentumPerSample,
+                           size_t actualMBSize,
+                           const double L2RegWeight, const double L1RegWeight,
+                           const bool needAveMultiplier,
+                           const bool useNesterovMomentum,
+                           const bool disableMomentumUnitGain) const;
+
+    template <class NodeElemType>
+    void UpdateWeights(std::shared_ptr<ComputationNode<NodeElemType>> learnableNode,
+                       MatrixBasePtr smoothedGradient, double& smoothedCount,
+                       shared_ptr<ComputationNetwork> net,
+                       const double learnRatePerSample,
+                       const int epochNumber,
+                       size_t numSamplesInMinibatch);
+    void MixedUpdateWeights(std::shared_ptr<ComputationNode<half>> learnableNode,
+                            MatrixBasePtr smoothedGradient, double& smoothedCounts,
+                            shared_ptr<ComputationNetwork> net,
+                            const double learnRatePerSample,
+                            const int epochNumber,
+                            size_t numSamplesInMinibatch);
 
     // return -1 if nothing exists
     int DetermineStartEpoch(const bool makeMode);
@@ -595,8 +599,7 @@ public:
     wstring GetModelNameForEpoch(const int epoch, bool bLastModel = false) const;
 
 protected:
-
-	template <class ActualElemType = ElemType>
+    template <class ActualElemType = ElemType>
     void ClipGradient(Matrix<ActualElemType>& gradient, const size_t actualMBSize) const;
 
     void SaveCheckPointInfo(const size_t epoch, const size_t totalSamplesSeen, // TODO: combine totalSamplesSeen and prevCriterion into a EpochCriterion type
@@ -659,13 +662,13 @@ protected:
     double m_lastFinishedEpochTrainLoss;
 
     std::shared_ptr<IDistGradAggregator<ElemType>> m_distGradAgg; // aggregate gradients
-    std::shared_ptr<struct DistGradHeader> m_gradHeader; // aggregate criterion and errors
+    std::shared_ptr<struct DistGradHeader> m_gradHeader;          // aggregate criterion and errors
 
     shared_ptr<IMASGD<ElemType>> m_pMASGDHelper;
 
-	// used for mixed precision training.
-	std::map<std::wstring, std::shared_ptr<Matrix<float>>> m_masterWeights;
-	std::map<std::wstring, std::shared_ptr<Matrix<float>>> m_FP32GradBuffer;
+    // used for mixed precision training.
+    std::map<std::wstring, std::shared_ptr<Matrix<float>>> m_masterWeights;
+    std::map<std::wstring, std::shared_ptr<Matrix<float>>> m_FP32GradBuffer;
 
 private:
     void MarkDropoutNodesEvalTimeStampAsOutdated(const ComputationNetworkPtr& net, const ComputationNodeBasePtr& criterionNode);

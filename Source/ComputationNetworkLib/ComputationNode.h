@@ -79,12 +79,12 @@ enum CopyNodeFlags // flags to be passed to the CopyTo() function
     copyNodeAcrossNetworks = 4  // allow a cross network child copy
 };
 
-enum class ComputationNodeDataType 
+enum class ComputationNodeDataType
 {
-	UNKONWN,
-	FLOAT,
-	DOUBLE,
-	HALF
+    UNKONWN,
+    FLOAT,
+    DOUBLE,
+    HALF
 };
 
 #pragma region base computation class
@@ -366,11 +366,11 @@ public:
         node->ClearConfigMemberCache();
     }
 
-	virtual void TypedCopyTo(ComputationNodeBasePtr node, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const = 0;
+    virtual void TypedCopyTo(ComputationNodeBasePtr node, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const = 0;
 
-    virtual ComputationNodeBasePtr Duplicate(const std::wstring& newName = L"", const CopyNodeFlags flags = CopyNodeFlags::copyNodeAll) const = 0;   // (called on here implemented by ComputationNode<ElemType>
+    virtual ComputationNodeBasePtr Duplicate(const std::wstring& newName = L"", const CopyNodeFlags flags = CopyNodeFlags::copyNodeAll) const = 0; // (called on here implemented by ComputationNode<ElemType>
 
-	virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName = L"", const CopyNodeFlags flags = CopyNodeFlags::copyNodeAll) const = 0;
+    virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName = L"", const CopyNodeFlags flags = CopyNodeFlags::copyNodeAll) const = 0;
 
     virtual void Load(File& /*fstream*/, size_t /*modelVersion*/)
     {
@@ -1266,7 +1266,7 @@ template <class ElemType>
 class ComputationNode : public ComputationNodeBase // abstract class that cannot be instantiated
 {
     typedef ComputationNodeBase Base;
-	template <typename NodeDataType> friend class ComputationNode;
+    template <typename NodeDataType> friend class ComputationNode;
 
 protected:
 
@@ -1299,56 +1299,56 @@ public:
     // recover a ComputationNodePtr (which is a shared_ptr) from a naked pointer to our base type (ComputationNodeBase) stored as a void* (old NDL parser does that)
     static ComputationNodePtr FromVoidPtr(void* vp)
     {
-        auto p = dynamic_cast<ComputationNode<ElemType>*>((ComputationNodeBase*)vp); // TODO: check that all void* casts really come from ComputationNodeBasePtr; or add a method ToVoidPtr(). Or get rid of the void*?!
+        auto p = dynamic_cast<ComputationNode<ElemType>*>((ComputationNodeBase*) vp); // TODO: check that all void* casts really come from ComputationNodeBasePtr; or add a method ToVoidPtr(). Or get rid of the void*?!
         return p ? p->shared_from_this() : nullptr;
     }
 
-	template <typename NodeDataType>
-	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-	{
-		auto node = dynamic_pointer_cast<ComputationNode<NodeDataType>>(nodeP);
-		if (!node)
-			InvalidArgument("an ComputationNodeBasePtr of mismatching precision was passed in function TypedCopyToImpl");
+    template <typename NodeDataType>
+    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+    {
+        auto node = dynamic_pointer_cast<ComputationNode<NodeDataType>>(nodeP);
+        if (!node)
+            InvalidArgument("an ComputationNodeBasePtr of mismatching precision was passed in function TypedCopyToImpl");
 
-		if (m_value)
-		{
-			node->CreateValueMatrixIfNull();
-			node->m_value->Resize(m_value->GetNumRows(), m_value->GetNumCols());
-			node->m_value->CastAssignValuesOf(*m_value);
-		}
-		else
-			node->m_value = nullptr;
-		if (m_gradient)
-		{
-			node->CreateGradientMatrixIfNull();
-			node->m_gradient->Resize(m_gradient->GetNumRows(), m_gradient->GetNumCols());
-			node->m_gradient->CastAssignValuesOf(*m_gradient);
-		}
-		else
-			node->m_gradient = nullptr;
-	}
+        if (m_value)
+        {
+            node->CreateValueMatrixIfNull();
+            node->m_value->Resize(m_value->GetNumRows(), m_value->GetNumCols());
+            node->m_value->CastAssignValuesOf(*m_value);
+        }
+        else
+            node->m_value = nullptr;
+        if (m_gradient)
+        {
+            node->CreateGradientMatrixIfNull();
+            node->m_gradient->Resize(m_gradient->GetNumRows(), m_gradient->GetNumCols());
+            node->m_gradient->CastAssignValuesOf(*m_gradient);
+        }
+        else
+            node->m_gradient = nullptr;
+    }
 
-	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-	{
-		Base::CopyTo(nodeP, newName, flags);
-		if (flags & CopyNodeFlags::copyNodeValue)
-		{
-			switch (dataType)
-			{
-			case ComputationNodeDataType::DOUBLE:
-				TypedCopyToImpl<double>(nodeP);
-				break;
-			case ComputationNodeDataType::FLOAT:
-				TypedCopyToImpl<float>(nodeP);
-				break;
-			case ComputationNodeDataType::HALF:
-				TypedCopyToImpl<half>(nodeP);
-				break;
-			default: 
-				RuntimeError("Type not supported");
-			}
-		}
-	}
+    virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+    {
+        Base::CopyTo(nodeP, newName, flags);
+        if (flags & CopyNodeFlags::copyNodeValue)
+        {
+            switch (dataType)
+            {
+            case ComputationNodeDataType::DOUBLE:
+                TypedCopyToImpl<double>(nodeP);
+                break;
+            case ComputationNodeDataType::FLOAT:
+                TypedCopyToImpl<float>(nodeP);
+                break;
+            case ComputationNodeDataType::HALF:
+                TypedCopyToImpl<half>(nodeP);
+                break;
+            default:
+                RuntimeError("Type not supported");
+            }
+        }
+    }
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1383,30 +1383,30 @@ public:
         return node;
     }
 
-	// duplicate a node with given data type
-#define DeclareTypedDuplicate(ClassName)																													\
-public:																																						\
-	ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override	\
-	{																																						\
-		const std::wstring& name = (newName.empty()) ? NodeName() : newName;																				\
-		ComputationNodeBasePtr node = nullptr;																												\
-		switch (dataType)																																	\
-		{																																					\
-		case ComputationNodeDataType::DOUBLE:																												\
-			node = make_shared<ClassName<double>>(m_deviceId, name);																						\
-			break;																																			\
-		case ComputationNodeDataType::FLOAT:																												\
-			node = make_shared<ClassName<float>>(m_deviceId, name);																							\
-			break;																																			\
-		case ComputationNodeDataType::HALF:																													\
-			node = make_shared<ClassName<half>>(m_deviceId, name);																							\
-			break;																																			\
-		default:																																			\
-			RuntimeError("Type is not supported.");																											\
-		}																																					\
-		TypedCopyTo(node, name, dataType, flags);																											\
-		return node;																																		\
-	}																																						\
+    // duplicate a node with given data type
+#define DeclareTypedDuplicate(ClassName)                                                                                                                 \
+public:                                                                                                                                                  \
+    ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override \
+    {                                                                                                                                                    \
+        const std::wstring& name = (newName.empty()) ? NodeName() : newName;                                                                             \
+        ComputationNodeBasePtr node = nullptr;                                                                                                           \
+        switch (dataType)                                                                                                                                \
+        {                                                                                                                                                \
+        case ComputationNodeDataType::DOUBLE:                                                                                                            \
+            node = make_shared<ClassName<double>>(m_deviceId, name);                                                                                     \
+            break;                                                                                                                                       \
+        case ComputationNodeDataType::FLOAT:                                                                                                             \
+            node = make_shared<ClassName<float>>(m_deviceId, name);                                                                                      \
+            break;                                                                                                                                       \
+        case ComputationNodeDataType::HALF:                                                                                                              \
+            node = make_shared<ClassName<half>>(m_deviceId, name);                                                                                       \
+            break;                                                                                                                                       \
+        default:                                                                                                                                         \
+            RuntimeError("Type is not supported.");                                                                                                      \
+        }                                                                                                                                                \
+        TypedCopyTo(node, name, dataType, flags);                                                                                                        \
+        return node;                                                                                                                                     \
+    }
 
     // creation from configuration
     // Nodes with NumInputs<> should say DeclareConstructorFromConfigWithNumInputs(ClassName), and nodes without DeclareConstructorFromConfig(ClassName).
@@ -1525,12 +1525,12 @@ protected:
         return DownCast(m_inputs[inputIndex]);
     }
 
-	inline ComputationNodeBasePtr InputInBasePtr(const size_t inputIndex) const
-	{
-		if (inputIndex >= m_inputs.size())
-			LogicError("Inputs: inputIndex %d is out of range for %ls %ls operation.", (int)inputIndex, NodeName().c_str(), OperationName().c_str());
-		return m_inputs[inputIndex];
-	}
+    inline ComputationNodeBasePtr InputInBasePtr(const size_t inputIndex) const
+    {
+        if (inputIndex >= m_inputs.size())
+            LogicError("Inputs: inputIndex %d is out of range for %ls %ls operation.", (int) inputIndex, NodeName().c_str(), OperationName().c_str());
+        return m_inputs[inputIndex];
+    }
 
     template<typename InputType>
     inline shared_ptr<ComputationNode<InputType>> TypedInput(const size_t inputIndex) const
@@ -2395,9 +2395,9 @@ public:
     virtual void Save(File& fstream) const override { NOT_IMPLEMENTED; }
     virtual void Load(File& /*fstream*/, size_t /*modelVersion*/) override { NOT_IMPLEMENTED; }
     virtual void CopyTo(ComputationNodeBasePtr node, const std::wstring& newName, const CopyNodeFlags flags) const override { NOT_IMPLEMENTED; }
-	virtual void TypedCopyTo(ComputationNodeBasePtr node, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override { NOT_IMPLEMENTED; }
+    virtual void TypedCopyTo(ComputationNodeBasePtr node, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override { NOT_IMPLEMENTED; }
     virtual ComputationNodeBasePtr Duplicate(const std::wstring& newName, const CopyNodeFlags flags) const override { NOT_IMPLEMENTED; }
-	virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override { NOT_IMPLEMENTED; }
+    virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override { NOT_IMPLEMENTED; }
     virtual double Get00Element() const override { NOT_IMPLEMENTED; }
     virtual MatrixBasePtr ValuePtr() const override { NOT_IMPLEMENTED; }
     virtual void UpdateFunctionMBSize() override { NOT_IMPLEMENTED; }

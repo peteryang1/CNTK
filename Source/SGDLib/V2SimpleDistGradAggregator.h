@@ -120,11 +120,11 @@ public:
 
         return false;
     }
-	bool AggregateGradients(const std::vector<TypedMatrixPtr>& gradients, DistGradHeader* headerCPU, bool resetState) override 
-	{
-		NOT_IMPLEMENTED;
-		return false;
-	}
+    bool AggregateGradients(const std::vector<TypedMatrixPtr>& gradients, DistGradHeader* headerCPU, bool resetState) override
+    {
+        NOT_IMPLEMENTED;
+        return false;
+    }
 
 private:
     bool IsInitialized() const { return m_initialized; }
