@@ -28,7 +28,7 @@ class DelayedValueNodeBase : public ComputationNode<ElemType>, public IRecurrent
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;
     typedef std::shared_ptr<DelayedValueNodeState<ElemType>> DelayedNodeStatePtr;
-    template <typename NodeDataType, int direction> friend class DelayedValueNodeBase;
+	template <typename NodeDataType, int direction_new> friend class DelayedValueNodeBase;
 
 private:
     TensorView<ElemType> GetMaskTensor(size_t rank, const FrameRange& fr) const;
@@ -58,12 +58,12 @@ protected:
             LogicError("LateAttachingNode::AttachInputs: must only be called once");
         };
     }
-    template <typename NodeDataType>
-    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
 public:
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override;
-    virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
+	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override;
     virtual void Load(File& fstream, size_t modelVersion) override;
     virtual void Save(File& fstream) const override;
     virtual void UpdateFunctionMBSize() override;
@@ -77,7 +77,7 @@ public:
     virtual int /*IRecurrentNode::*/ GetRecurrenceSteppingDirection() const override { return -direction; }
     virtual NodeStatePtr /*IStatefulNode::*/ ExportState() override;
     virtual void /*IStatefulNode::*/ ImportState(const NodeStatePtr& pImportedState) override;
-    virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override;
+	virtual ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override;
     int TimeStep() const { return m_timeStep; }
     ElemType InitialActivationValue() const { return m_initialStateValue; }
 
@@ -115,7 +115,7 @@ class PastValueNode : public DelayedValueNodeBase<ElemType, -1 /*, MinibatchPack
 {
     typedef DelayedValueNodeBase<ElemType, -1 /*, MinibatchPackingFlags::SequenceStart*/> Base; UsingDelayedValueNodeMembers;
     static const std::wstring TypeName() { return L"PastValue"; }
-    template <typename NodeDataType> friend class PastValueNode;
+	template <typename NodeDataType> friend class PastValueNode;
 
 public:
     PastValueNode(DEVICEID_TYPE deviceId, const wstring& name)

@@ -34,7 +34,7 @@ class PlusNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Plus"; }
-    DeclareTypedDuplicate(PlusNode)
+	DeclareTypedDuplicate(PlusNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(PlusNode);
     PlusNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -104,7 +104,7 @@ class LogPlusNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"LogPlus"; }
-    DeclareTypedDuplicate(LogPlusNode)
+	DeclareTypedDuplicate(LogPlusNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(LogPlusNode);
     LogPlusNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -179,7 +179,7 @@ class PowNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Pow"; }
-    DeclareTypedDuplicate(PowNode)
+	DeclareTypedDuplicate(PowNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(PowNode);
     PowNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -239,7 +239,7 @@ class MinusNode : public BinaryElementWiseNode<ElemType>
 {
     typedef BinaryElementWiseNode<ElemType> Base; UsingBinaryElementwiseNodeBaseMembers;
     static const std::wstring TypeName() { return L"Minus"; }
-    DeclareTypedDuplicate(MinusNode)
+	DeclareTypedDuplicate(MinusNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(MinusNode);
     MinusNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -307,7 +307,8 @@ class ElementTimesNode : public BinaryElementWiseNode<ElemType>
     {
         return L"ElementTimes";
     }
-    DeclareTypedDuplicate(ElementTimesNode) public:
+	DeclareTypedDuplicate(ElementTimesNode)
+public:
     DeclareConstructorFromConfigWithNumInputs(ElementTimesNode);
     ElementTimesNode(DEVICEID_TYPE deviceId, const wstring& name)
         : Base(deviceId, name)
@@ -376,15 +377,13 @@ template class ElementTimesNode<half>;
 // TODO: allow outputRank < 0 meaning to denote "all but", from right
 // -----------------------------------------------------------------------
 
-template <class ElemType, bool m_transpose>
+template <class ElemType,bool m_transpose>
 class TimesNodeBase : public ComputationNode<ElemType>, public NumInputs<2>
 {
     friend class ElementTimesNode<ElemType>;
 
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembers; using Base::OperationName;        
-    template <typename NodeDataType, bool m_transpose>
-    friend class TimesNodeBase;
-
+	template <typename NodeDataType, bool m_transpose_new> friend class TimesNodeBase;
 public:
     enum : int
     {
@@ -398,27 +397,27 @@ public:
     {
     }
 
-    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-    {
-        Base::TypedCopyTo(nodeP, newName, dataType, flags);
-        if (flags & CopyNodeFlags::copyNodeValue)
-        {
-            switch (dataType)
-            {
-            case ComputationNodeDataType::DOUBLE:
-                TypedCopyToImpl<double>(nodeP);
-                break;
-            case ComputationNodeDataType::FLOAT:
-                TypedCopyToImpl<float>(nodeP);
-                break;
-            case ComputationNodeDataType::HALF:
-                TypedCopyToImpl<half>(nodeP);
-                break;
-            default:
-                RuntimeError("Type is not supported.");
-            }
-        }
-    }
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
@@ -453,13 +452,13 @@ public:
     }
 
 protected:
-    template <typename NodeDataType>
-    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-    {
-        auto node = dynamic_pointer_cast<TimesNodeBase<NodeDataType, m_transpose>>(nodeP);
-        node->m_outputRank = m_outputRank;
-        node->m_inferInputRankToMap = m_inferInputRankToMap;
-    }
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<TimesNodeBase<NodeDataType, m_transpose>>(nodeP);
+		node->m_outputRank = m_outputRank;
+		node->m_inferInputRankToMap = m_inferInputRankToMap;
+	}
 
     // if the left argument of the matrix product (A) has a time axis, it can only be applied sample by sample
     // where each sample is treated as a separate matrix object (as a consequence, it then also applies to B and the result as well)
@@ -1135,7 +1134,7 @@ class TimesNode : public TimesNodeBase<ElemType, false>
     typedef TimesNodeBase<ElemType, false> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"Times"; }
-    DeclareTypedDuplicate(TimesNode)
+	DeclareTypedDuplicate(TimesNode)
 public:
     TimesNode(DEVICEID_TYPE deviceId, const wstring& name, size_t outputRank = 1, int inferInputRankToMap = Base::NoInferredInputRank)
         : Base(deviceId, name, outputRank, inferInputRankToMap)
@@ -1167,7 +1166,7 @@ class TransposeTimesNode : public TimesNodeBase<ElemType, true>
     typedef TimesNodeBase<ElemType, true> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"TransposeTimes"; }
-    DeclareTypedDuplicate(TransposeTimesNode)
+	DeclareTypedDuplicate(TransposeTimesNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(TransposeTimesNode);
     TransposeTimesNode(DEVICEID_TYPE deviceId, const wstring& name, size_t outputRank = 1)
@@ -1202,8 +1201,8 @@ class QuantizedTimesNode : public TimesNodeBase<ElemType, false>
     {
         return L"QuantizedTimes";
     }
-    template <class NodeDataType> friend class QuantizedTimesNode;
-    DeclareTypedDuplicate(QuantizedTimesNode)
+	template <class NodeDataType> friend class QuantizedTimesNode;
+	DeclareTypedDuplicate(QuantizedTimesNode)
 
 private:
     // Quantizer bit shift for matrices A and B
@@ -1229,27 +1228,27 @@ public:
         AttachInputsFromConfig(configp, this->GetExpectedNumInputs());
     }
 
-    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-    {
-        Base::TypedCopyTo(nodeP, newName, dataType, flags);
-        if (flags & CopyNodeFlags::copyNodeValue)
-        {
-            switch (dataType)
-            {
-            case ComputationNodeDataType::DOUBLE:
-                TypedCopyToImpl<double>(nodeP);
-                break;
-            case ComputationNodeDataType::FLOAT:
-                TypedCopyToImpl<float>(nodeP);
-                break;
-            case ComputationNodeDataType::HALF:
-                TypedCopyToImpl<half>(nodeP);
-                break;
-            default:
-                RuntimeError("Type is not supported.");
-            }
-        }
-    }
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1293,13 +1292,13 @@ public:
     }
 
 private:
-    template <typename NodeDataType>
-    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-    {
-        auto node = dynamic_pointer_cast<QuantizedTimesNode<NodeDataType>>(nodeP);
-        node->m_bitShiftA = m_bitShiftA;
-        node->m_bitShiftB = m_bitShiftB;
-    }
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<QuantizedTimesNode<NodeDataType>>(nodeP);
+		node->m_bitShiftA = m_bitShiftA;
+		node->m_bitShiftB = m_bitShiftB;
+	}
 };
 
 template class QuantizedTimesNode<float>;
@@ -1326,7 +1325,7 @@ class SumElementsNode : public ComputationNodeNonLooping /*ComputationNode*/<Ele
     {
         return L"SumElements";
     }
-    DeclareTypedDuplicate(SumElementsNode)
+	DeclareTypedDuplicate(SumElementsNode)
 public:
     DeclareConstructorFromConfigWithNumInputs(SumElementsNode);
     SumElementsNode(DEVICEID_TYPE deviceId, const wstring& name)
@@ -1374,7 +1373,7 @@ class TransposeDimensionsNode : public ComputationNode /*ComputationNode*/<ElemT
 {
     typedef ComputationNode<ElemType> Base; UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"TransposeDimensions"; }
-    DeclareTypedDuplicate(TransposeDimensionsNode)
+	DeclareTypedDuplicate(TransposeDimensionsNode)
 
 public:
     TransposeDimensionsNode(DEVICEID_TYPE deviceId, const wstring& name, int axis1 = 1, int axis2 = 2)
@@ -1559,8 +1558,8 @@ class CosDistanceNode : public ComputationNode<ElemType>, public NumInputs<2>
     {
         return L"CosDistance";
     }
-    template <typename NodeDataType> friend class CosDistanceNode;
-    DeclareTypedDuplicate(CosDistanceNode)
+	template <typename NodeDataType> friend class CosDistanceNode;
+	DeclareTypedDuplicate(CosDistanceNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CosDistanceNode);
@@ -1618,27 +1617,27 @@ public:
         SetDims(TensorShape::Scalar(Environment().IsV2Library()), Input(1)->HasMBLayout());
     }
 
-    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-    {
-        Base::TypedCopyTo(nodeP, newName, dataType, flags);
-        if (flags & CopyNodeFlags::copyNodeValue)
-        {
-            switch (dataType)
-            {
-            case ComputationNodeDataType::DOUBLE:
-                TypedCopyToImpl<double>(nodeP);
-                break;
-            case ComputationNodeDataType::FLOAT:
-                TypedCopyToImpl<float>(nodeP);
-                break;
-            case ComputationNodeDataType::HALF:
-                TypedCopyToImpl<half>(nodeP);
-                break;
-            default:
-                RuntimeError("Type is not supported.");
-            }
-        }
-    }
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -1677,14 +1676,14 @@ public:
     }
 
 private:
-    template <typename NodeDataType>
-    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-    {
-        auto node = dynamic_pointer_cast<CosDistanceNode<NodeDataType>>(nodeP);
-        node->m_invNorm0->CastAssignValuesOf(*m_invNorm0);
-        node->m_invNorm1->CastAssignValuesOf(*m_invNorm1);
-        node->m_temp->CastAssignValuesOf(*m_temp);
-    }
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CosDistanceNode<NodeDataType>>(nodeP);
+		node->m_invNorm0->CastAssignValuesOf(*m_invNorm0);
+		node->m_invNorm1->CastAssignValuesOf(*m_invNorm1);
+		node->m_temp->CastAssignValuesOf(*m_temp);
+	}
 
 private:
     // invNorm nodes tranfer data between ForwardProp and BackpropTo
@@ -1713,7 +1712,7 @@ class KhatriRaoProductNode : public ComputationNode<ElemType>, public NumInputs<
     {
         return L"KhatriRaoProduct";
     }
-    DeclareTypedDuplicate(KhatriRaoProductNode)
+	DeclareTypedDuplicate(KhatriRaoProductNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(KhatriRaoProductNode);
@@ -1790,8 +1789,8 @@ class CosDistanceWithNegativeSamplesNode : public ComputationNode<ElemType>, pub
     {
         return L"CosDistanceWithNegativeSamples";
     }
-    template <typename NodeDataType> friend class CosDistanceWithNegativeSamplesNode;
-    DeclareTypedDuplicate(CosDistanceWithNegativeSamplesNode)
+	template <typename NodeDataType> friend class CosDistanceWithNegativeSamplesNode;
+	DeclareTypedDuplicate(CosDistanceWithNegativeSamplesNode)
 
 public:
     DeclareConstructorFromConfigWithNumInputs(CosDistanceWithNegativeSamplesNode);
@@ -1969,27 +1968,27 @@ public:
         SetDims(TensorShape(negNumber + 1), HasMBLayout());
     }
 
-    void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
-    {
-        Base::TypedCopyTo(nodeP, newName, dataType, flags);
-        if (flags & CopyNodeFlags::copyNodeValue)
-        {
-            switch (dataType)
-            {
-            case ComputationNodeDataType::DOUBLE:
-                TypedCopyToImpl<double>(nodeP);
-                break;
-            case ComputationNodeDataType::FLOAT:
-                TypedCopyToImpl<float>(nodeP);
-                break;
-            case ComputationNodeDataType::HALF:
-                TypedCopyToImpl<half>(nodeP);
-                break;
-            default:
-                RuntimeError("Type is not supported.");
-            }
-        }
-    }
+	void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType, const CopyNodeFlags flags) const override
+	{
+		Base::TypedCopyTo(nodeP, newName, dataType, flags);
+		if (flags & CopyNodeFlags::copyNodeValue)
+		{
+			switch (dataType)
+			{
+			case ComputationNodeDataType::DOUBLE:
+				TypedCopyToImpl<double>(nodeP);
+				break;
+			case ComputationNodeDataType::FLOAT:
+				TypedCopyToImpl<float>(nodeP);
+				break;
+			case ComputationNodeDataType::HALF:
+				TypedCopyToImpl<half>(nodeP);
+				break;
+			default:
+				RuntimeError("Type is not supported.");
+			}
+		}
+	}
 
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const CopyNodeFlags flags) const override
     {
@@ -2036,17 +2035,17 @@ public:
     }
 
 private:
-    template <typename NodeDataType>
-    void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
-    {
-        auto node = dynamic_pointer_cast<CosDistanceWithNegativeSamplesNode<NodeDataType>>(nodeP);
-        node->m_invNorm0->CastAssignValuesOf(*m_invNorm0);
-        node->m_invNorm1->CastAssignValuesOf(*m_invNorm1);
-        node->m_invNormSquare->CastAssignValuesOf(*m_invNormSquare);
-        node->m_leftTerm->CastAssignValuesOf(*m_leftTerm);
-        node->m_rightTerm->CastAssignValuesOf(*m_rightTerm);
-        node->m_temp->CastAssignValuesOf(*m_temp);
-    }
+	template <typename NodeDataType>
+	void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const
+	{
+		auto node = dynamic_pointer_cast<CosDistanceWithNegativeSamplesNode<NodeDataType>>(nodeP);
+		node->m_invNorm0->CastAssignValuesOf(*m_invNorm0);
+		node->m_invNorm1->CastAssignValuesOf(*m_invNorm1);
+		node->m_invNormSquare->CastAssignValuesOf(*m_invNormSquare);
+		node->m_leftTerm->CastAssignValuesOf(*m_leftTerm);
+		node->m_rightTerm->CastAssignValuesOf(*m_rightTerm);
+		node->m_temp->CastAssignValuesOf(*m_temp);
+	}
 
 private:
     // invNorm nodes tranfer data between ForwardProp and BackpropTo
@@ -2095,8 +2094,8 @@ class EpochAccumulatorNode : public ComputationNodeNonLooping<ElemType>, public 
     typedef ComputationNodeNonLooping<ElemType> Base;
     UsingComputationNodeMembersBoilerplate;
     static const std::wstring TypeName() { return L"EpochAccumulator"; }
-    template <typename NodeDataType> friend class EpochAccumulatorNode;
-    DeclareTypedDuplicate(EpochAccumulatorNode)
+	template <typename NodeDataType> friend class EpochAccumulatorNode;
+	DeclareTypedDuplicate(EpochAccumulatorNode)
 
 public:
     EpochAccumulatorNode(DEVICEID_TYPE deviceId, const wstring& name);
@@ -2116,8 +2115,8 @@ public:
     virtual void CopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName,
                         const CopyNodeFlags flags) const override;
 
-    virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType,
-                             const CopyNodeFlags flags) const override;
+	virtual void TypedCopyTo(ComputationNodeBasePtr nodeP, const std::wstring& newName, const ComputationNodeDataType dataType,
+							 const CopyNodeFlags flags) const override;
 
     virtual void Validate(bool isFinalValidationPass);
 
@@ -2127,7 +2126,7 @@ public:
     TensorView<ElemType> EnsureAccumlator();
 
 protected:
-    template <typename NodeDataType> void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
+	template <typename NodeDataType> void TypedCopyToImpl(ComputationNodeBasePtr nodeP) const;
 
     friend void AggregateAccumulatorValuesAndUpdateEvaluation<ElemType>(
         shared_ptr<ComputationNetwork> net,
@@ -2163,16 +2162,16 @@ public:
     {
     }
 
-    CastNode(const ScriptableObjects::IConfigRecordPtr configp)
-        : CastNode(configp->Get(L"deviceId"), L"<placeholder>")
-    {
-        AttachInputsFromConfig(configp, 1);
-    }
+	CastNode(const ScriptableObjects::IConfigRecordPtr configp)
+		: CastNode(configp->Get(L"deviceId"), L"<placeholder>")
+	{
+		AttachInputsFromConfig(configp, 1);
+	}
 
-    ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
-    {
-        NOT_IMPLEMENTED;
-    }
+	ComputationNodeBasePtr TypedDuplicate(const ComputationNodeDataType dataType, const std::wstring& newName, const CopyNodeFlags flags) const override
+	{
+		NOT_IMPLEMENTED;
+	}
 
     virtual void /*ComputationNode::*/ ForwardProp(const FrameRange& fr) override
     {

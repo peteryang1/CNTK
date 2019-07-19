@@ -5000,6 +5000,23 @@ void Matrix<ElemType>::BatchNormalizationForward(const Matrix<StatType>& scale, 
                             NOT_IMPLEMENTED);
 }
 
+template <>
+template <>
+void Matrix<half>::BatchNormalizationForward(const Matrix<half>& scale, const Matrix<half>& bias, bool inferenceOnly, double expAvgFactor, double blendFactor,
+                                             Matrix<half>& runMean, Matrix<half>& runVariance, Matrix<half>& out, double epsilon,
+                                             Matrix<half>& saveMean, Matrix<half>& saveInvStdDev) const
+{
+    DecideAndMoveToRightDevice(*this, out);
+
+    DISPATCH_MATRIX_ON_FLAG(this,
+                            this,
+                            NOT_IMPLEMENTED,
+                            m_GPUMatrix->BatchNormalizationForward(*(scale.m_GPUMatrix), *(bias.m_GPUMatrix), inferenceOnly, expAvgFactor, blendFactor,
+                                                                   *(runMean.m_GPUMatrix), *(runVariance.m_GPUMatrix),
+                                                                   *(out.m_GPUMatrix), epsilon, *(saveMean.m_GPUMatrix), *(saveInvStdDev.m_GPUMatrix)),
+                            NOT_IMPLEMENTED,
+                            NOT_IMPLEMENTED);
+}
 
 #pragma region Asoftmax
 
@@ -5160,6 +5177,25 @@ void Matrix<ElemType>::BatchNormalizationBackward(const Matrix<ElemType>& in, Ma
                             m_CPUMatrix->BatchNormalizationBackward(*(in.m_CPUMatrix), *(grad.m_CPUMatrix), *(scale.m_CPUMatrix), blendFactor,
                                                                     *(saveMean.m_CPUMatrix), *(saveInvStdDev.m_CPUMatrix),
                                                                     *(scaleGrad.m_CPUMatrix), *(biasGrad.m_CPUMatrix)),
+                            m_GPUMatrix->BatchNormalizationBackward(*(in.m_GPUMatrix), *(grad.m_GPUMatrix), *(scale.m_GPUMatrix), blendFactor,
+                                                                    *(saveMean.m_GPUMatrix), *(saveInvStdDev.m_GPUMatrix),
+                                                                    *(scaleGrad.m_GPUMatrix), *(biasGrad.m_GPUMatrix)),
+                            NOT_IMPLEMENTED,
+                            NOT_IMPLEMENTED);
+}
+
+template <>
+template <>
+void Matrix<half>::BatchNormalizationBackward(const Matrix<half>& in, Matrix<half>& grad, const Matrix<half>& scale, double blendFactor,
+                                              const Matrix<half>& saveMean, const Matrix<half>& saveInvStdDev,
+                                              Matrix<half>& scaleGrad, Matrix<half>& biasGrad) const
+{
+    DecideAndMoveToRightDevice(*this, grad);
+
+    // REVIEW alexeyk: add sparse version.
+    DISPATCH_MATRIX_ON_FLAG(this,
+                            this,
+                            NOT_IMPLEMENTED,
                             m_GPUMatrix->BatchNormalizationBackward(*(in.m_GPUMatrix), *(grad.m_GPUMatrix), *(scale.m_GPUMatrix), blendFactor,
                                                                     *(saveMean.m_GPUMatrix), *(saveInvStdDev.m_GPUMatrix),
                                                                     *(scaleGrad.m_GPUMatrix), *(biasGrad.m_GPUMatrix)),

@@ -50,150 +50,6 @@ static constexpr std::array<cudnnDataType_t, 2> kComputeTypesToTry = {
     CUDNN_DATA_FLOAT,
     CUDNN_DATA_HALF };
 
-static wstring ConvFwdAlgoToString(cudnnConvolutionFwdAlgo_t algo)
-{
-    switch (algo)
-    {
-    case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM";
-    case CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM";
-    case CUDNN_CONVOLUTION_FWD_ALGO_GEMM:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_GEMM";
-    case CUDNN_CONVOLUTION_FWD_ALGO_DIRECT:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_DIRECT";
-    case CUDNN_CONVOLUTION_FWD_ALGO_FFT:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT";
-    case CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING";
-    case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD";
-    case CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED:
-        return L"CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED";
-    default:
-        return L"UNKNOWN_FWD_ALGO";
-    }
-}
-
-static wstring ConvBwdFilterAlgoToString(cudnnConvolutionBwdFilterAlgo_t algo)
-{
-    switch (algo)
-    {
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0";
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1";
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT";
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3";
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD";
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED";
-    case CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING:
-        return L"CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING";
-    default:
-        return L"UNKNOWN_BWD_FILTER_ALGO";
-    }
-}
-
-static wstring ConvBwdDataAlgoToString(cudnnConvolutionBwdDataAlgo_t algo)
-{
-    switch (algo)
-    {
-    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_0:
-        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_0";
-    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_1:
-        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_1";
-    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT:
-        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT";
-    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING:
-        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING";
-    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD:
-        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD";
-    case CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED:
-        return L"CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED";
-    default:
-        return L"UNKNOWN_BWD_DATA_ALGO";
-    }
-}
-
-static wstring ConvAlgoToString(int algo, CuDnnConvDirection algoType)
-{
-    switch (algoType)
-    {
-    case CuDnnConvDirection::Forward:
-        return ConvFwdAlgoToString((cudnnConvolutionFwdAlgo_t)algo);
-    case CuDnnConvDirection::BackwardData:
-        return ConvBwdDataAlgoToString((cudnnConvolutionBwdDataAlgo_t)algo);
-    case CuDnnConvDirection::BackwardFilter:
-        return ConvBwdFilterAlgoToString((cudnnConvolutionBwdFilterAlgo_t)algo);
-    default:
-        return L"UNKNOWN_ALGO_TYPE";
-    }
-}
-
-static wstring MathTypeToString(cudnnMathType_t mathType)
-{
-    switch (mathType)
-    {
-    case CUDNN_DEFAULT_MATH:
-        return L"CUDNN_DEFAULT_MATH";
-    case CUDNN_TENSOR_OP_MATH:
-        return L"CUDNN_TENSOR_OP_MATH";
-    default:
-        return L"UNKNOWN_MATH_TYPE";
-    }
-}
-
-static wstring DataTypeToString(cudnnDataType_t dataType)
-{
-    switch (dataType)
-    {
-    case CUDNN_DATA_FLOAT:
-        return L"CUDNN_DATA_FLOAT";
-    case CUDNN_DATA_HALF:
-        return L"CUDNN_DATA_HALF";
-    case CUDNN_DATA_DOUBLE:
-        return L"CUDNN_DATA_DOUBLE";
-    default:
-        return L"UNKONWN_DATA_TYPE";
-    }
-}
-
-
-template <class AlgoPerfType>
-void LogConvAlgoTime(int algoCount, AlgoPerfType *perfs)
-{
-    LOGPRINTF(stderr, "[Start Conv Profile]\n");
-
-    if (std::is_same<AlgoPerfType, cudnnConvolutionFwdAlgoPerf_t>::value)
-        for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
-        {
-            wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::Forward);
-            LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
-        }
-    else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdDataAlgoPerf_t>::value)
-        for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
-        {
-            wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::BackwardData);
-            LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
-        }
-    else if (std::is_same<AlgoPerfType, cudnnConvolutionBwdFilterAlgoPerf_t>::value)
-        for (int algo_idx = 0; algo_idx < algoCount; ++algo_idx)
-        {
-            wstring algoName = ConvAlgoToString((int)perfs[algo_idx].algo, CuDnnConvDirection::BackwardFilter);
-            LOGPRINTF(stderr, "|| Algo[%d]: %ls, time: %f s, mathType: %ls\n", algo_idx, algoName.c_str(), perfs[algo_idx].time, MathTypeToString(perfs[algo_idx].mathType).c_str());
-        }
-    else
-    {
-        LOGPRINTF(stderr, "UNKNOWN_ALGO_TYPE\n");
-    }
-
-    LOGPRINTF(stderr, "[End Conv Profile]\n");
-}
-
 class CuDnnKernel
 {
 public:
@@ -865,9 +721,6 @@ private:
                 std::array<typename TAlgo::typeT, 2> algosToCompare;
                 typename TAlgo::typeT *res = nullptr;
 
-                LOGPRINTF(stderr, "\n==================================Start Conv Debug Info======================================\n");
-                LOGPRINTF(stderr, "[Conv kernel Info]:\n%s\n", ((std::string)(*m_geometry)).c_str());
-
                 for (int convDataTypeIdx = 0; convDataTypeIdx < 2; ++convDataTypeIdx)
                 {
                     ChangeConvDescDataType(kComputeTypesToTry[convDataTypeIdx], convDirection);
@@ -875,8 +728,6 @@ private:
                     int algoCount = 0;
                     CUDNN_CALL(finder(algoCount, algoPerfStats.data()));
                     assert(algoCount > 0);
-                    LOGPRINTF(stderr, "\n\nConv log for %ls Type:\n", DataTypeToString(kComputeTypesToTry[convDataTypeIdx]).c_str());
-                    LogConvAlgoTime<typename TAlgo::typeT>(algoCount, algoPerfStats.data());
                     algosToCompare[convDataTypeIdx] = algoPerfStats[0];
                     if (algosToCompare[convDataTypeIdx].time < 0)
                         algosToCompare[convDataTypeIdx].time = 1e10;
@@ -888,7 +739,6 @@ private:
                 if (!std::is_same<ElemType, half>::value)
                 {
                     res = &algosToCompare[0];
-                    LOGPRINTF(stderr, "Choose pseudo-half(float) to compute\n");
                 }
                 else
                 {
@@ -898,10 +748,8 @@ private:
                         : 1;
                     res = &algosToCompare[bestAlgoDataTypeIndex];
                     ChangeConvDescDataType(kComputeTypesToTry[bestAlgoDataTypeIndex], convDirection);
-                    LOGPRINTF(stderr, "Choose %s to compute\n", (bestAlgoDataTypeIndex == 0) ? "pseudo-half(float)" : "true-half(half)");
                 }
 
-                LOGPRINTF(stderr, "\n==================================End Conv Debug Info======================================\n");
 
                 algo.RecordAlgoBatchSizeWorkspaceSize(true, (*res).algo, batchSize, (*res).memory);
                 algo.AlgoMathType = (*res).mathType;

@@ -1404,7 +1404,7 @@ public:                                                                         
         default:                                                                                                                                         \
             RuntimeError("Type is not supported.");                                                                                                      \
         }                                                                                                                                                \
-        TypedCopyTo(node, name, dataType, flags);                                                                                                        \
+        this->TypedCopyTo(node, name, dataType, flags);                                                                                                  \
         return node;                                                                                                                                     \
     }
 
