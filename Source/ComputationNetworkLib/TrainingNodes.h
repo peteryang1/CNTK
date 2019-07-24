@@ -4337,7 +4337,7 @@ public:
 // * disableRegularization is a Boolean flag that specifies this batch normalization node turns off regularization or not.
 // * imageLayout is the image layout. Only cudnn is supported at present.
 // -----------------------------------------------------------------------
-template <class ElemType, bool PureHalf = false>
+template <class ElemType>
 class BatchNormalizationNode : public ComputationNodeNonLooping<ElemType>, public IFreezable, public IdentityTransformerNodeOnOneInput<0>
 {
     typedef ComputationNodeNonLooping<ElemType> Base;
@@ -4347,9 +4347,9 @@ class BatchNormalizationNode : public ComputationNodeNonLooping<ElemType>, publi
         return L"BatchNormalization";
     }
 
-    typedef typename std::conditional<std::is_same<ElemType, half>::value && !PureHalf, float, ElemType>::type StatType;
+    typedef typename ElemType StatType;
 
-    template <typename NodeDataType, bool PureHalf_new>
+    template <typename NodeDataType>
     friend class BatchNormalizationNode;
 
     // inputs
