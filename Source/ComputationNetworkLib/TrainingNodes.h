@@ -4347,8 +4347,6 @@ class BatchNormalizationNode : public ComputationNodeNonLooping<ElemType>, publi
         return L"BatchNormalization";
     }
 
-    typedef typename ElemType StatType;
-
     template <typename NodeDataType>
     friend class BatchNormalizationNode;
 
@@ -4368,7 +4366,7 @@ public:
                            double epsilon = 0, bool useCntkEngine = true, bool disableRegularization = false, ImageLayoutKind imageLayoutKind = ImageLayoutKind::CHW)
         : Base(deviceId, name), m_spatial(spatial), m_normTimeConst(normalizationTimeConstant), m_blendTimeConst(blendTimeConstant), m_epsilon(epsilon), m_useCntkEngine(useCntkEngine), m_disableRegularization(disableRegularization), m_imageLayoutKind(imageLayoutKind), m_runCountUntied(0), m_one(1, 1, deviceId), m_convertRunningVariancePending(false)
     {
-        m_one.SetValue((StatType) 1); // (constant value used for GPU-side update of runCount)
+        m_one.SetValue((ElemType) 1); // (constant value used for GPU-side update of runCount)
     }
     BatchNormalizationNode(const ScriptableObjects::IConfigRecordPtr configp)
         : BatchNormalizationNode(configp->Get(L"deviceId"), L"<placeholder>", configp->Get(L"spatial"),
@@ -4560,14 +4558,14 @@ private: // time-constant conversions
     void ResetRunCount()
     {
         if (HasTiedRunCount())
-            this->template TypedInput<StatType>(RUN_COUNT)->Value().SetValue(0);
+            this->template TypedInput<ElemType>(RUN_COUNT)->Value().SetValue(0);
         m_runCountUntied = 0;
     }
     void AggregateRunCount(size_t countToAdd)
     {
         if (HasTiedRunCount())
         {
-            this->template TypedInput<StatType>(RUN_COUNT)->Value().AddWithScaleOf(/*alpha=*/(StatType) countToAdd, m_one); // this += countToAdd * (1)
+            this->template TypedInput<ElemType>(RUN_COUNT)->Value().AddWithScaleOf(/*alpha=*/(ElemType) countToAdd, m_one); // this += countToAdd * (1)
             if (countToAdd != 0)
                 m_runCountUntied = SIZE_MAX; // we only need this for 0 checks, this value says we only know it's not 0
         }
@@ -4577,7 +4575,7 @@ private: // time-constant conversions
     size_t RunCount() const // const version of above; keep identical
     {
         if (HasTiedRunCount())
-            m_runCountUntied = (size_t) this->template TypedInput<StatType>(RUN_COUNT)->Value().Get00Element(); // if needed then cache it over
+            m_runCountUntied = (size_t) this->template TypedInput<ElemType>(RUN_COUNT)->Value().Get00Element(); // if needed then cache it over
         return m_runCountUntied;
     }
     bool IsRunCount0() const
@@ -4663,10 +4661,10 @@ public:
         FrameRange fr(Input(DATA)->GetMBLayout());
 
         Matrix<ElemType> sliceInputValue = Input(DATA)->MaskedValueFor(fr);
-        const Matrix<StatType>& scale = this->template TypedInput<StatType>(SCALE)->Value();
-        const Matrix<StatType>& bias = this->template TypedInput<StatType>(BIAS)->Value();
-        Matrix<StatType>& runMean = this->template TypedInput<StatType>(RUN_MEAN)->Value();
-        Matrix<StatType>& runVariance = this->template TypedInput<StatType>(RUN_VAR)->Value();
+        const Matrix<ElemType>& scale = this->template TypedInput<ElemType>(SCALE)->Value();
+        const Matrix<ElemType>& bias = this->template TypedInput<ElemType>(BIAS)->Value();
+        Matrix<ElemType>& runMean = this->template TypedInput<ElemType>(RUN_MEAN)->Value();
+        Matrix<ElemType>& runVariance = this->template TypedInput<ElemType>(RUN_VAR)->Value();
         Matrix<ElemType> sliceOutputValue = ValueFor(fr);
 
         assert(scale.GetNumRows() == bias.GetNumRows());
@@ -4724,8 +4722,8 @@ public:
                 GlobalMemoryBlock<ElemType>* globalMemoryBlockPtr = (GlobalMemoryBlock<ElemType>*) (valueGlobalMemoryBlockVec[inputNode->m_blockIndex]);
                 globalMemoryBlockPtr->getSegmentMatrix(*m_tempSegment, 0, inputNode->m_startIndex + inputNode->m_numRows);
 
-                const Matrix<StatType>& scale = this->template TypedInput<StatType>(SCALE)->Value();
-                const Matrix<StatType>& bias = this->template TypedInput<StatType>(BIAS)->Value();
+                const Matrix<ElemType>& scale = this->template TypedInput<ElemType>(SCALE)->Value();
+                const Matrix<ElemType>& bias = this->template TypedInput<ElemType>(BIAS)->Value();
 
                 // If inputIndex is not DATA and we get here, then it means that DATA receives no gradient.
                 // However, the underlying engine does not foresee this case, and thus always needs a place
@@ -4756,8 +4754,8 @@ public:
             {
                 auto sliceOutputGrad = MaskedGradientFor(fr);
                 auto sliceInputValue = Input(DATA)->ValueFor(fr);
-                const Matrix<StatType>& scale = this->template TypedInput<StatType>(SCALE)->Value();
-                const Matrix<StatType>& bias = this->template TypedInput<StatType>(BIAS)->Value();
+                const Matrix<ElemType>& scale = this->template TypedInput<ElemType>(SCALE)->Value();
+                const Matrix<ElemType>& bias = this->template TypedInput<ElemType>(BIAS)->Value();
 
                 // If inputIndex is not DATA and we get here, then it means that DATA receives no gradient.
                 // However, the underlying engine does not foresee this case, and thus always needs a place
@@ -4790,19 +4788,19 @@ public:
         {
             assert(m_gradientValid);
 
-            if (this->template TypedInput<StatType>(SCALE)->IsGradientInitializedBy(this))
-                this->template TypedInput<StatType>(SCALE)->Gradient().AssignValuesOf(*m_dScale);
+            if (this->template TypedInput<ElemType>(SCALE)->IsGradientInitializedBy(this))
+                this->template TypedInput<ElemType>(SCALE)->Gradient().AssignValuesOf(*m_dScale);
             else
-                this->template TypedInput<StatType>(SCALE)->Gradient() += *m_dScale;
+                this->template TypedInput<ElemType>(SCALE)->Gradient() += *m_dScale;
         }
         else if (inputIndex == BIAS) // derivative with respect to the bias, precomputed during input derivative computation
         {
             assert(m_gradientValid);
 
-            if (this->template TypedInput<StatType>(BIAS)->IsGradientInitializedBy(this))
-                this->template TypedInput<StatType>(BIAS)->Gradient().AssignValuesOf(*m_dBias);
+            if (this->template TypedInput<ElemType>(BIAS)->IsGradientInitializedBy(this))
+                this->template TypedInput<ElemType>(BIAS)->Gradient().AssignValuesOf(*m_dBias);
             else
-                this->template TypedInput<StatType>(BIAS)->Gradient() += *m_dBias;
+                this->template TypedInput<ElemType>(BIAS)->Gradient() += *m_dBias;
         }
         // No derivatives with respect to running mean and variance.
     }
@@ -4848,7 +4846,7 @@ public:
         // running statistics inputs must be learnable parameters, since we update them directly here
         for (size_t i = RUN_MEAN; i < GetNumInputs(); i++)
             //if (!Input(i)->Is<LearnableParameter<ElemType>>()) // somehow this does not compile on gcc (works on VS)
-            if (!dynamic_cast<LearnableParameter<StatType>*>(this->template TypedInput<StatType>(i).get()))
+            if (!dynamic_cast<LearnableParameter<ElemType>*>(this->template TypedInput<ElemType>(i).get()))
                 InvalidArgument("%ls: Inputs [%d..%d] must be learnable parameters.", NodeDescription().c_str(), (int) RUN_MEAN, (int) GetNumInputs());
 
                 // infer dimensions of learnable parameters
@@ -4858,11 +4856,11 @@ public:
 #if 1                                              // Workaround for today's definition: Trigger on [0 x 1] and infer that 0 as the total # elements needed.
         for (size_t i = SCALE; i < RUN_COUNT; i++) // scale, bias, run_mean, and run_variance
         {
-            auto paramLayout = this->template TypedInput<StatType>(i)->GetSampleLayout();
+            auto paramLayout = this->template TypedInput<ElemType>(i)->GetSampleLayout();
             if (paramLayout.GetRank() == 2 && paramLayout[0] == 0 && paramLayout[1] == 1 && inputLayout.GetNumElements() > 0) // [0 x 1]
             {
                 size_t total = m_spatial ? inputLayout.GetDims().back() : inputLayout.GetNumElements();
-                this->template TypedInput<StatType>(i)->ValidateInferInputDimsFrom(TensorShape(total, 1));
+                this->template TypedInput<ElemType>(i)->ValidateInferInputDimsFrom(TensorShape(total, 1));
             }
         }
 #else
@@ -4892,11 +4890,11 @@ public:
             // check inputs
             for (size_t i = SCALE; i < RUN_COUNT; i++) // scale, bias, run_mean, and run_variance
             {
-                auto inputPtr = this->template TypedInput<StatType>(i);
+                auto inputPtr = this->template TypedInput<ElemType>(i);
                 if (inputPtr->HasMBLayout())
                     InvalidArgument("%ls: Input[%d] has a dynamic axis. BatchNormalization parameters cannot have that.", NodeDescription().c_str(), (int) i);
                 auto paramLayout = inputPtr->GetSampleLayout();
-                if (paramLayout != this->template TypedInput<StatType>(SCALE)->GetSampleLayout())
+                if (paramLayout != this->template TypedInput<ElemType>(SCALE)->GetSampleLayout())
                     InvalidArgument("%ls: Input[%d] has a layout different from Input[1]. All must be identical.", NodeDescription().c_str(), (int) i);
 #if 0 // BUGBUG: For this to work, parameter shapes must be correct (cf. comment above on inference).
                 if (paramLayout.GetRank() > inputLayout.GetRank())
@@ -4909,7 +4907,7 @@ public:
             if (HasTiedRunCount()) // 0-th order statistics (count) (optional for backcompat with old code which didn't correctly share it)
             {
                 // This must always be a [1] tensor. No inference allowed.
-                auto inputPtr = this->template TypedInput<StatType>(RUN_COUNT);
+                auto inputPtr = this->template TypedInput<ElemType>(RUN_COUNT);
                 if (inputPtr->HasMBLayout() || (inputPtr->GetSampleLayout().GetRank() > 1) || (inputPtr->GetSampleLayout().GetNumElements() != 1))
                     InvalidArgument("%ls: Input[RUN_COUNT] must be a vector of 1 element without dynamic axis.", NodeDescription().c_str());
                 RunCount(); // cache the shared value into the local cache, for 0 checks
@@ -4955,7 +4953,7 @@ public:
             if (m_bnEng == nullptr)
             {
                 auto shape = GetSampleLayout();
-                m_bnEng = BatchNormEngine<ElemType, StatType>::Create(m_deviceId, shape, m_spatial, m_imageLayoutKind,
+                m_bnEng = BatchNormEngine<ElemType, ElemType>::Create(m_deviceId, shape, m_spatial, m_imageLayoutKind,
                                                                       m_useCntkEngine ? BatchNormEngineKind::Cntk : BatchNormEngineKind::CuDnn);
             }
 
@@ -4969,16 +4967,16 @@ public:
     void RequestMatricesBeforeForwardProp(MatrixPool& matrixPool) override
     {
         Base::RequestMatricesBeforeForwardProp(matrixPool);
-        this->template TypedRequestMatrixFromPool<StatType>(m_savedMean, matrixPool);
-        this->template TypedRequestMatrixFromPool<StatType>(m_savedInvStdDev, matrixPool);
+        this->template TypedRequestMatrixFromPool<ElemType>(m_savedMean, matrixPool);
+        this->template TypedRequestMatrixFromPool<ElemType>(m_savedInvStdDev, matrixPool);
     }
 
     void RequestMatricesBeforeBackprop(MatrixPool& matrixPool) override
     {
         Base::RequestMatricesBeforeBackprop(matrixPool);
         RequestMatrixFromPool(m_dDataDummy, matrixPool);
-        this->template TypedRequestMatrixFromPool<StatType>(m_dScale, matrixPool);
-        this->template TypedRequestMatrixFromPool<StatType>(m_dBias, matrixPool);
+        this->template TypedRequestMatrixFromPool<ElemType>(m_dScale, matrixPool);
+        this->template TypedRequestMatrixFromPool<ElemType>(m_dBias, matrixPool);
 
         if (m_connectGlobalConcat)
         {
@@ -4990,11 +4988,11 @@ public:
     void ReleaseMatricesAfterBackprop(MatrixPool& matrixPool) override
     {
         Base::ReleaseMatricesAfterBackprop(matrixPool);
-        this->template TypedReleaseMatrixToPool<StatType>(m_savedMean, matrixPool);
-        this->template TypedReleaseMatrixToPool<StatType>(m_savedInvStdDev, matrixPool);
+        this->template TypedReleaseMatrixToPool<ElemType>(m_savedMean, matrixPool);
+        this->template TypedReleaseMatrixToPool<ElemType>(m_savedInvStdDev, matrixPool);
         ReleaseMatrixToPool(m_dDataDummy, matrixPool);
-        this->template TypedReleaseMatrixToPool<StatType>(m_dScale, matrixPool);
-        this->template TypedReleaseMatrixToPool<StatType>(m_dBias, matrixPool);
+        this->template TypedReleaseMatrixToPool<ElemType>(m_dScale, matrixPool);
+        this->template TypedReleaseMatrixToPool<ElemType>(m_dBias, matrixPool);
 
         if (m_connectGlobalConcat)
             ReleaseMatrixToPool(m_tempSegment, matrixPool);
@@ -5032,8 +5030,8 @@ public:
     // Turn off the L1 and L2 regularization
     void DisableRegInBatchNormalization()
     {
-        let scaleNode = dynamic_pointer_cast<LearnableParameter<StatType>>(this->template TypedInput<StatType>(SCALE));
-        let biasNode = dynamic_pointer_cast<LearnableParameter<StatType>>(this->template TypedInput<StatType>(BIAS));
+        let scaleNode = dynamic_pointer_cast<LearnableParameter<ElemType>>(this->template TypedInput<ElemType>(SCALE));
+        let biasNode = dynamic_pointer_cast<LearnableParameter<ElemType>>(this->template TypedInput<ElemType>(BIAS));
         scaleNode->SetRegMultiplier(0.f);
         biasNode->SetRegMultiplier(0.f);
     }
@@ -5139,20 +5137,20 @@ private:
     // This value is not updated unless needed, so it may be out of date during most operation.
     // It will be updated at start (Validate()) and saving models, and any time the true value is needed.
     mutable size_t m_runCountUntied; // cached running sample count (mutable since it is a cache)
-    Matrix<StatType> m_one;          // constant [1x1] matrix that contains a 1 (used for updating the shared count)
+    Matrix<ElemType> m_one;          // constant [1x1] matrix that contains a 1 (used for updating the shared count)
 
     // Interpolated actual mean/inverse stddev values. Pre-computed on forward pass, also used in gradient computation.
-    shared_ptr<Matrix<StatType>> m_savedMean;
-    shared_ptr<Matrix<StatType>> m_savedInvStdDev;
+    shared_ptr<Matrix<ElemType>> m_savedMean;
+    shared_ptr<Matrix<ElemType>> m_savedInvStdDev;
     // Temp buffer for scale and bias derivatives. Only used in BackpropTo(), carrying info from first call to subsequent calls.
     // Not used for blendFactor=1 in CNTK engine.
     shared_ptr<Matrix<ElemType>> m_dDataDummy;
-    shared_ptr<Matrix<StatType>> m_dScale;
-    shared_ptr<Matrix<StatType>> m_dBias;
+    shared_ptr<Matrix<ElemType>> m_dScale;
+    shared_ptr<Matrix<ElemType>> m_dBias;
 
     bool m_gradientValid = false;
 
-    std::unique_ptr<BatchNormEngine<ElemType, StatType>> m_bnEng;
+    std::unique_ptr<BatchNormEngine<ElemType, ElemType>> m_bnEng;
 
     bool m_convertRunningVariancePending;
 
