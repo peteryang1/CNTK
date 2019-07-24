@@ -4830,9 +4830,6 @@ public:
 
     void Validate(bool isFinalValidationPass) override
     {
-		if (!m_useCntkEngine && PureHalf)
-			InvalidArgument("Pure half batch normalization is only supported via Cntk Engine.");
-
         if (Input(DATA)->OperationName() == L"GlobalConcat")
             m_connectGlobalConcat = true;
 
