@@ -4846,7 +4846,7 @@ public:
         // running statistics inputs must be learnable parameters, since we update them directly here
         for (size_t i = RUN_MEAN; i < GetNumInputs(); i++)
             //if (!Input(i)->Is<LearnableParameter<ElemType>>()) // somehow this does not compile on gcc (works on VS)
-            if (!dynamic_cast<LearnableParameter<ElemType>*>(this->template TypedInput<ElemType>(i).get()))
+            if (!dynamic_cast<LearnableParameter<ElemType>*>(this->template TypedInput<half>(i).get()))
                 InvalidArgument("%ls: Inputs [%d..%d] must be learnable parameters.", NodeDescription().c_str(), (int) RUN_MEAN, (int) GetNumInputs());
 
                 // infer dimensions of learnable parameters
@@ -4856,11 +4856,11 @@ public:
 #if 1                                              // Workaround for today's definition: Trigger on [0 x 1] and infer that 0 as the total # elements needed.
         for (size_t i = SCALE; i < RUN_COUNT; i++) // scale, bias, run_mean, and run_variance
         {
-            auto paramLayout = this->template TypedInput<ElemType>(i)->GetSampleLayout();
+            auto paramLayout = this->template TypedInput<half>(i)->GetSampleLayout();
             if (paramLayout.GetRank() == 2 && paramLayout[0] == 0 && paramLayout[1] == 1 && inputLayout.GetNumElements() > 0) // [0 x 1]
             {
                 size_t total = m_spatial ? inputLayout.GetDims().back() : inputLayout.GetNumElements();
-                this->template TypedInput<ElemType>(i)->ValidateInferInputDimsFrom(TensorShape(total, 1));
+                this->template TypedInput<half>(i)->ValidateInferInputDimsFrom(TensorShape(total, 1));
             }
         }
 #else
@@ -4890,11 +4890,11 @@ public:
             // check inputs
             for (size_t i = SCALE; i < RUN_COUNT; i++) // scale, bias, run_mean, and run_variance
             {
-                auto inputPtr = this->template TypedInput<ElemType>(i);
+                auto inputPtr = this->template TypedInput<half>(i);
                 if (inputPtr->HasMBLayout())
                     InvalidArgument("%ls: Input[%d] has a dynamic axis. BatchNormalization parameters cannot have that.", NodeDescription().c_str(), (int) i);
                 auto paramLayout = inputPtr->GetSampleLayout();
-                if (paramLayout != this->template TypedInput<ElemType>(SCALE)->GetSampleLayout())
+                if (paramLayout != this->template TypedInput<half>(SCALE)->GetSampleLayout())
                     InvalidArgument("%ls: Input[%d] has a layout different from Input[1]. All must be identical.", NodeDescription().c_str(), (int) i);
 #if 0 // BUGBUG: For this to work, parameter shapes must be correct (cf. comment above on inference).
                 if (paramLayout.GetRank() > inputLayout.GetRank())
@@ -4907,7 +4907,7 @@ public:
             if (HasTiedRunCount()) // 0-th order statistics (count) (optional for backcompat with old code which didn't correctly share it)
             {
                 // This must always be a [1] tensor. No inference allowed.
-                auto inputPtr = this->template TypedInput<ElemType>(RUN_COUNT);
+                auto inputPtr = this->template TypedInput<half>(RUN_COUNT);
                 if (inputPtr->HasMBLayout() || (inputPtr->GetSampleLayout().GetRank() > 1) || (inputPtr->GetSampleLayout().GetNumElements() != 1))
                     InvalidArgument("%ls: Input[RUN_COUNT] must be a vector of 1 element without dynamic axis.", NodeDescription().c_str());
                 RunCount(); // cache the shared value into the local cache, for 0 checks

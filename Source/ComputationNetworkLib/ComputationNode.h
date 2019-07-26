@@ -1540,7 +1540,7 @@ protected:
 
         shared_ptr<ComputationNode<InputType>> node = dynamic_pointer_cast<ComputationNode<InputType>>(m_inputs[inputIndex]);
         if (!node)
-            InvalidArgument("an TypedInput of mismatching precision was passed");
+            InvalidArgument("an TypedInput of mismatching precision was passed %d %ls %ls", (int) inputIndex, NodeName().c_str(), OperationName().c_str());
 
         return node;
     }
