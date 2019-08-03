@@ -108,18 +108,18 @@ FeatureNormalizeLayer {featureNormalizeType=2} =
 
 # AdditiveFullConnectionLayer -- create a label-specific-add full connection layer
 # Note: outputDimension may describe a tensor as well.
-AdditiveFullConnectionLayer {inputDimension, outputDimension, weightNormalize=true, bias=0, annealBias=false, biasBase=0, biasGamma=0, biasPower=1, biasMin=0, biasMax=0, init='glorotUniform', initValueScale=1} =
+AdditiveFullConnectionLayer {inputDimension, outputDimension, weightNormalize=true, bias=0, annealBias=false, biasBase=0, biasGamma=0, biasPower=1, biasMin=0, biasMax=0, init='glorotUniform', initValueScale=1, learningRateMultiplier=1.0, weightFile=''} =
 {
-    W = ParameterTensor {_ConcatArrays (outputDimension, inputDimension), init=init, initValueScale=initValueScale}
+    W = ParameterTensor {_ConcatArrays (outputDimension, inputDimension), learningRateMultiplier=learningRateMultiplier, init=init, initValueScale=initValueScale, weightFile=weightFile}
 
     apply (labelSequence, outProbVectorSequence) = AdditiveFullConnection(labelSequence, outProbVectorSequence, W, outputDimension=outputDimension, weightNormalize=weightNormalize, bias=bias, annealBias=annealBias, biasBase=biasBase, biasGamma=biasGamma, biasPower=biasPower, biasMin=biasMin, biasMax=biasMax)
 }.apply
 
 # ArcMarginProductLayer -- create a arc margin product layer
 # Note: outputDimension may describe a tensor as well.
-ArcMarginProductLayer {inputDimension, outputDimension, bias=0, init='glorotUniform', initValueScale=1} =
+ArcMarginProductLayer {inputDimension, outputDimension, bias=0, init='glorotUniform', initValueScale=1, learningRateMultiplier=1.0, weightFile=''} =
 {
-    W = ParameterTensor {_ConcatArrays (outputDimension, inputDimension), init=init, initValueScale=initValueScale}
+    W = ParameterTensor {_ConcatArrays (outputDimension, inputDimension), learningRateMultiplier=learningRateMultiplier, init=init, initValueScale=initValueScale, weightFile=weightFile}
 
      apply (labelSequence, outProbVectorSequence) = ArcMarginProduct(labelSequence, outProbVectorSequence, W, bias=bias)
 }.apply
@@ -769,7 +769,7 @@ Parameter {outputDim, inputDim, learningRateMultiplier = 1.0, init = ''/*|unifor
 LearnableParameter = Parameter  // deprecated
 
 # TODO: make Parameter take tensor dims?
-ParameterTensor {dims, learningRateMultiplier = 1.0, init = ''/*|uniform|fixedValue|gaussian|fromFile|fromLiteral*/, initValueScale = 1, value = 0, initValue = '', initFilterRank = 0, initOutputRank = 1, initFromFilePath = '', initFromLiteral = '', initOnCPUOnly=true, randomSeed=-1, disableRegularization = false, distribute=false, tag=''} = new ComputationNode [ operation = 'LearnableParameter' ; shape = new TensorShape [ /*dims*/ ] /*plus the function args*/ ]
+ParameterTensor {dims, learningRateMultiplier = 1.0, init = ''/*|uniform|fixedValue|gaussian|fromFile|fromLiteral*/, initValueScale = 1, value = 0, initValue = '', initFilterRank = 0, initOutputRank = 1, initFromFilePath = '', initFromLiteral = '', initOnCPUOnly=true, randomSeed=-1, disableRegularization = false, distribute=false, tag='', weightFile=''} = new ComputationNode [ operation = 'LearnableParameter' ; shape = new TensorShape [ /*dims*/ ] /*plus the function args*/ ]
 ConstantFromString(literal, tag='') = ParameterTensor((0)/*dim, will be inferred*/, initFromLiteral = literal, learningRateMultiplier = 0.0)
 # TODO: Deprecate ConstantFromString() in favor of Constant(array expression)
 DynamicAxis(tag='') = new ComputationNode [ operation = 'DynamicAxis' ; /*plus the function args*/  ]
