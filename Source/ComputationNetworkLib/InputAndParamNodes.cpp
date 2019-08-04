@@ -436,7 +436,7 @@ void LearnableParameter<ElemType>::InitWeightFromBinFile(const std::wstring& ini
 
     if (!this->m_distribute)
     {
-        if (Value().GetNumRows != numRows || Value().GetNumCols != numCols)
+        if (Value().GetNumRows() != numRows || Value().GetNumCols() != numCols)
             LogicError("LearnableParameter: InitWeightFromBinFile dimemsion is wrong: [%d, %d] v.s. [%d, %d].", (int)Value().GetNumRows(), (int)Value().GetNumCols(), numRows, numCols);
         vector<ElemType> array;
         array.resize(numRows * numCols);
