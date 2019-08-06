@@ -563,10 +563,10 @@ __global__ void kComputeSpatialBatchMeanAndInvStdDev_apex(int vectorSize, int sp
     {
         runMean[blockIdx.x] = expAvgFactor * static_cast<StatType>(x_mean) + (1 - expAvgFactor) * runMean[blockIdx.x];
         runVariance[blockIdx.x] = expAvgFactor * static_cast<StatType>(m_2_n / count) + (1 - expAvgFactor) * runVariance[blockIdx.x];
-        if (isnan((float) xMean[blockIdx.x]))
+        if (::isnan((float) xMean[blockIdx.x]))
             xMean[blockIdx.x] = 0;
         xMean[blockIdx.x] = (1.0 - blendFactor) * runMean[blockIdx.x] + blendFactor * xMean[blockIdx.x];
-        if (isnan((float) xInvStdDev[blockIdx.x]))
+        if (::isnan((float) xInvStdDev[blockIdx.x]))
             xInvStdDev[blockIdx.x] = 1;
         xInvStdDev[blockIdx.x] = (1.0 - blendFactor) * runVariance[blockIdx.x] + blendFactor * xInvStdDev[blockIdx.x];
         xInvStdDev[blockIdx.x] = 1.0 / sqrt(xInvStdDev[blockIdx.x] + epsilon);
