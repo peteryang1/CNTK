@@ -3500,17 +3500,6 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     runVariance.CastAssignValuesOf(&runVariance_32);
     savedMean.CastAssignValuesOf(&savedMean_32);
     savedInvStdDev.CastAssignValuesOf(&savedInvStdDev_32);
-
-    GPUMatrix<float> tmp(out.GetNumRows(), out.GetNumCols(), out.GetComputeDeviceId());
-    tmp.CastAssignValuesOf(&out);
-    vector<float> tmp_v(out.GetNumRows() * out.GetNumCols());
-    cudaMemcpy(tmp_v.data(), tmp.Data(), out.GetNumRows() * out.GetNumCols() * sizeof(float), cudaMemcpyDeviceToHost);
-    for (auto i = 0; i < std::min(static_cast<int>(scale.GetNumRows()), 100); i++)
-    {
-        std::cout << tmp_v[i*spatialSize] << " ";
-    }
-    std::cout << std::endl
-              << std::endl;
 }
 
 // savedMean/savedInvStdDev are the interpolated mean/inverse standard deviation as used in ForwardProp().
