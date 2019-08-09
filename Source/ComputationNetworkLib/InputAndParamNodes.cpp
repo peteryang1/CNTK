@@ -446,7 +446,7 @@ void LearnableParameter<ElemType>::InitWeightFromBinFile(const std::wstring& ini
             {
                 float weightElement;
                 binFile.read((char*)&weightElement, sizeof(float));
-                array[i * numCols + j] = (ElemType)weightElement;
+                array[j * numRows + i] = (ElemType)weightElement;
             }
         }
         Value().SetValue(numRows, numCols, m_deviceId, const_cast<ElemType*>(array.data()), matrixFlagNormal);
