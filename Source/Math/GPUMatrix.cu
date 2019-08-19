@@ -3467,7 +3467,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     //                                                                savedMean.Data(), savedInvStdDev.Data(),
     //                                                                GetStream());
 
-    ofstream OutFile("output",std::ofstream::app)
+    ofstream OutFile("output",std::ofstream::app);
     vector<float> tmp;
 
     tmp.resize(GetNumRows() * GetNumCols());
