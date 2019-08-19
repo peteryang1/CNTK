@@ -3471,7 +3471,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     vector<float> tmp;
 
     tmp.resize(GetNumRows() * GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3481,7 +3481,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
 
     tmp.resize(out.GetNumRows() * out.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), out.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3491,7 +3491,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
 
     tmp.resize(scale.GetNumRows() * scale.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), scale.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3501,7 +3501,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
 
     tmp.resize(bias.GetNumRows() * bias.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), bias.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3511,7 +3511,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
     
     tmp.resize(runMean.GetNumRows() * runMean.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), runMean.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3521,7 +3521,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
 
     tmp.resize(runVariance.GetNumRows() * runVariance.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), runVariance.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3531,7 +3531,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
 
     tmp.resize(savedMean.GetNumRows() * savedMean.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
@@ -3541,7 +3541,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
 
     tmp.resize(savedInvStdDev.GetNumRows() * savedInvStdDev.GetNumCols());
-    cudaMemcpyAsync(
+    cudaMemcpy(
         tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
         cudaMemcpyHostToDevice);
     for(auto i=0;i<tmp.size();i+=10)
