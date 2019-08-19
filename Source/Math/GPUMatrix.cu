@@ -3563,7 +3563,7 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
     
     if(GetNumRows() > 0)
     {
-        throw std::RuntimeError;
+        LogicError("error");
     }
 
     bool spatial = GetNumRows() != scale.GetNumRows();
