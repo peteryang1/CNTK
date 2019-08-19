@@ -3504,17 +3504,15 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
     SyncGuard syncGuard;
     if (spatial)
     {
-        //Call2<ComputeSpatialScaleAndBiasGradients, ElemType, StatType>(spatialSize, vectorSize, spatialSize, batchSize, in.Data(), Data(), scaleGrad.Data(), biasGrad.Data(),
-        //                                                               savedMean.Data(), savedInvStdDev.Data(), GetStream());
-        ComputeSpatialScaleAndBiasGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, in.Data(), Data(), scaleGrad.Data(), biasGrad.Data(),
-                                                                                    savedMean.Data(), savedInvStdDev.Data(), GetStream(), meanGrad.Data(), varGrad.Data());
+        Call2<ComputeSpatialScaleAndBiasGradients, ElemType, StatType>(spatialSize, vectorSize, spatialSize, batchSize, in.Data(), Data(), scaleGrad.Data(), biasGrad.Data(),
+                                                                      savedMean.Data(), savedInvStdDev.Data(), GetStream());
+        // ComputeSpatialScaleAndBiasGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, in.Data(), Data(), scaleGrad.Data(), biasGrad.Data(),
+        //                                                                             savedMean.Data(), savedInvStdDev.Data(), GetStream(), meanGrad.Data(), varGrad.Data());
     }
     else
     {
         Call2<ComputeScaleAndBiasGradients, ElemType, StatType>(vectorSize, vectorSize, batchSize, in.Data(), Data(), scaleGrad.Data(), biasGrad.Data(),
                                                                 savedMean.Data(), savedInvStdDev.Data(), GetStream());
-        //Call2<ComputeScaleAndBiasGradients, ElemType, StatType>(vectorSize, vectorSize, batchSize, in.Data(), Data(), meanGrad.Data(), varGrad.Data(),
-        //                                                        savedMean.Data(), savedInvStdDev.Data(), GetStream());
     }
 
 #ifdef _MSC_VER
@@ -3527,10 +3525,10 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
 #pragma warning(pop)
 #endif
 
-    /*Call2<BackpropagateBatchNormGradients, ElemType, StatType>(spatial ? spatialSize : vectorSize, vectorSize, spatialSize, batchSize, spatial,
-                                                    in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, scaleGrad.Data(), biasGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());*/
-    BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
-                                                                            in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
+    Call2<BackpropagateBatchNormGradients, ElemType, StatType>(spatial ? spatialSize : vectorSize, vectorSize, spatialSize, batchSize, spatial,
+                                                    in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, scaleGrad.Data(), biasGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
+    // BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
+    //                                                                         in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
 }
 
 #pragma region Asoftmax
