@@ -29,6 +29,7 @@
 #include "Convolution.cuh"
 #include "CuDnnRNN.h"
 #include <iostream>
+#include <fstream>
 
 #pragma comment(lib, "cudart.lib") // instruct linker to reference these libs
 #pragma comment(lib, "cublas.lib")
@@ -3465,6 +3466,89 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     //                                                                runMean.Data(), runVariance.Data(),
     //                                                                savedMean.Data(), savedInvStdDev.Data(),
     //                                                                GetStream());
+
+    ofstream OutFile("output",std::ofstream::app)
+    vector<float> tmp;
+
+    tmp.resize(GetNumRows() * GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(out.GetNumRows() * out.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), out.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(scale.GetNumRows() * scale.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), scale.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(bias.GetNumRows() * bias.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), bias.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+    
+    tmp.resize(runMean.GetNumRows() * runMean.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), runMean.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(runVariance.GetNumRows() * runVariance.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), runVariance.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(savedMean.GetNumRows() * savedMean.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(savedInvStdDev.GetNumRows() * savedInvStdDev.GetNumCols());
+    cudaMemcpyAsync(
+        tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyHostToDevice);
+    for(auto &i:tmp)
+    {
+        OutFile << i << std::endl;
+    }
+    OutFile << std::endl;
 }
 
 // savedMean/savedInvStdDev are the interpolated mean/inverse standard deviation as used in ForwardProp().
@@ -3477,6 +3561,7 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
 {
     assert((GetNumRows() % scale.GetNumRows()) == 0);
 
+    throw RuntimeError;
     bool spatial = GetNumRows() != scale.GetNumRows();
     size_t vectorSize = GetNumRows();
     size_t spatialSize = spatial ? (GetNumRows() / scale.GetNumRows()) : 1;
