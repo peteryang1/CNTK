@@ -3434,14 +3434,14 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
         savedInvStdDev.RequireSize(runMean);
         if (spatial)
         {
-            // Call2<ComputeSpatialBatchMeanAndInvStdDev, ElemType, StatType>(spatialSize, vectorSize, spatialSize, batchSize, Data(),
-            //                                                               expAvgFactor, blendFactor,
-            //                                                               runMean.Data(), runVariance.Data(), epsilon,
-            //                                                               savedMean.Data(), savedInvStdDev.Data(), GetStream());
-            ComputeSpatialBatchMeanAndInvStdDev_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, Data(),
-                                                                                  expAvgFactor, blendFactor,
-                                                                                  runMean.Data(), runVariance.Data(), epsilon,
-                                                                                  savedMean.Data(), savedInvStdDev.Data(), GetStream());
+            Call2<ComputeSpatialBatchMeanAndInvStdDev, ElemType, StatType>(spatialSize, vectorSize, spatialSize, batchSize, Data(),
+                                                                          expAvgFactor, blendFactor,
+                                                                          runMean.Data(), runVariance.Data(), epsilon,
+                                                                          savedMean.Data(), savedInvStdDev.Data(), GetStream());
+            // ComputeSpatialBatchMeanAndInvStdDev_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, Data(),
+            //                                                                       expAvgFactor, blendFactor,
+            //                                                                       runMean.Data(), runVariance.Data(), epsilon,
+            //                                                                       savedMean.Data(), savedInvStdDev.Data(), GetStream());
         }
         else
         {
@@ -3451,21 +3451,21 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
                                                                     savedMean.Data(), savedInvStdDev.Data(), GetStream());
         }
     }
-    // Call2<NormalizeBatchTraining, ElemType, StatType>(spatial ? spatialSize : vectorSize, vectorSize, spatialSize, batchSize, spatial,
-    //                                                  normalizeRunningStats, epsilon,
-    //                                                  Data(), out.Data(),
-    //                                                  scale.Data(), bias.Data(),
-    //                                                  runMean.Data(), runVariance.Data(),
-    //                                                  savedMean.Data(), savedInvStdDev.Data(),
-    //                                                  GetStream());
+    Call2<NormalizeBatchTraining, ElemType, StatType>(spatial ? spatialSize : vectorSize, vectorSize, spatialSize, batchSize, spatial,
+                                                     normalizeRunningStats, epsilon,
+                                                     Data(), out.Data(),
+                                                     scale.Data(), bias.Data(),
+                                                     runMean.Data(), runVariance.Data(),
+                                                     savedMean.Data(), savedInvStdDev.Data(),
+                                                     GetStream());
 
-    NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
-                                                                   normalizeRunningStats, epsilon,
-                                                                   Data(), out.Data(),
-                                                                   scale.Data(), bias.Data(),
-                                                                   runMean.Data(), runVariance.Data(),
-                                                                   savedMean.Data(), savedInvStdDev.Data(),
-                                                                   GetStream());
+    // NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
+    //                                                                normalizeRunningStats, epsilon,
+    //                                                                Data(), out.Data(),
+    //                                                                scale.Data(), bias.Data(),
+    //                                                                runMean.Data(), runVariance.Data(),
+    //                                                                savedMean.Data(), savedInvStdDev.Data(),
+    //                                                                GetStream());
 
     ofstream OutFile("output",std::ofstream::app);
     vector<float> tmp;
