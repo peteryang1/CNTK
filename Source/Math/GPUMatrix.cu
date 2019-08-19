@@ -3560,6 +3560,12 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                      GPUMatrix<StatType>& scaleGrad, GPUMatrix<StatType>& biasGrad) const
 {
     assert((GetNumRows() % scale.GetNumRows()) == 0);
+    
+    if(GetNumRows() > 0)
+    {
+        throw std::RuntimeError;
+    }
+
     bool spatial = GetNumRows() != scale.GetNumRows();
     size_t vectorSize = GetNumRows();
     size_t spatialSize = spatial ? (GetNumRows() / scale.GetNumRows()) : 1;
@@ -3598,12 +3604,6 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                     in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, scaleGrad.Data(), biasGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
     // BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                         in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
-
-
-    if(GetNumRows() > 0)
-    {
-        throw RuntimeError;
-    }
 }
 
 #pragma region Asoftmax
