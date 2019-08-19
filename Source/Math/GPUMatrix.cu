@@ -3560,8 +3560,10 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                      GPUMatrix<StatType>& scaleGrad, GPUMatrix<StatType>& biasGrad) const
 {
     assert((GetNumRows() % scale.GetNumRows()) == 0);
-
-    throw RuntimeError;
+    if(GetNumRows() > 0)
+    {
+        throw RuntimeError;
+    }
     bool spatial = GetNumRows() != scale.GetNumRows();
     size_t vectorSize = GetNumRows();
     size_t spatialSize = spatial ? (GetNumRows() / scale.GetNumRows()) : 1;
