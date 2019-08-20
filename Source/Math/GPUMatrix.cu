@@ -3466,89 +3466,9 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     //                                                                runMean.Data(), runVariance.Data(),
     //                                                                savedMean.Data(), savedInvStdDev.Data(),
     //                                                                GetStream());
-
-    ofstream OutFile("output",std::ofstream::app);
-    vector<float> tmp;
-
-    tmp.resize(GetNumRows() * GetNumCols());
-    cudaMemcpy(
-        tmp.data(), Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(out.GetNumRows() * out.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), out.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(scale.GetNumRows() * scale.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), scale.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(bias.GetNumRows() * bias.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), bias.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
     
-    tmp.resize(runMean.GetNumRows() * runMean.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), runMean.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(runVariance.GetNumRows() * runVariance.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), runVariance.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(savedMean.GetNumRows() * savedMean.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(savedInvStdDev.GetNumRows() * savedInvStdDev.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
+    
+    std::cout << "forward" << std::endl;
 }
 
 // savedMean/savedInvStdDev are the interpolated mean/inverse standard deviation as used in ForwardProp().
@@ -3559,12 +3479,8 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                      const GPUMatrix<StatType>& savedMean, const GPUMatrix<StatType>& savedInvStdDev,
                                                      GPUMatrix<StatType>& scaleGrad, GPUMatrix<StatType>& biasGrad) const
 {
+    std::cout << "backward" << std::endl;
     assert((GetNumRows() % scale.GetNumRows()) == 0);
-    
-    if(GetNumRows() > 0)
-    {
-        LogicError("error");
-    }
 
     bool spatial = GetNumRows() != scale.GetNumRows();
     size_t vectorSize = GetNumRows();
@@ -3604,6 +3520,70 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                     in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, scaleGrad.Data(), biasGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
     // BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                         in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
+    
+    ofstream OutFile("output",std::ofstream::app);
+    vector<float> tmp;
+
+    tmp.resize(GetNumRows() * GetNumCols());
+    cudaMemcpy(
+        tmp.data(), Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(in.GetNumRows() * in.GetNumCols());
+    cudaMemcpy(
+        tmp.data(), in.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(grad.GetNumRows() * grad.GetNumCols());
+    cudaMemcpy(
+        tmp.data(), grad.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(scale.GetNumRows() * scale.GetNumCols());
+    cudaMemcpy(
+        tmp.data(), scale.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    
+    tmp.resize(savedMean.GetNumRows() * savedMean.GetNumCols());
+    cudaMemcpy(
+        tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+
+    tmp.resize(savedInvStdDev.GetNumRows() * savedInvStdDev.GetNumCols());
+    cudaMemcpy(
+        tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+
 }
 
 #pragma region Asoftmax
