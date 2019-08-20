@@ -3466,11 +3466,6 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     //                                                                runMean.Data(), runVariance.Data(),
     //                                                                savedMean.Data(), savedInvStdDev.Data(),
     //                                                                GetStream());
-    
-    
-    ofstream OutFile("output",std::ofstream::app);
-    std::cout << "forward" << std::endl;
-    OutFile << "f" << std::endl;
 }
 
 // savedMean/savedInvStdDev are the interpolated mean/inverse standard deviation as used in ForwardProp().
@@ -3523,69 +3518,6 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
     BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
                                                                             in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
     
-    ofstream OutFile("output",std::ofstream::app);
-    vector<float> tmp;
-
-    tmp.resize(GetNumRows() * GetNumCols());
-    cudaMemcpy(
-        tmp.data(), Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(in.GetNumRows() * in.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), in.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(grad.GetNumRows() * grad.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), grad.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(scale.GetNumRows() * scale.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), scale.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-    
-    tmp.resize(savedMean.GetNumRows() * savedMean.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
-    tmp.resize(savedInvStdDev.GetNumRows() * savedInvStdDev.GetNumCols());
-    cudaMemcpy(
-        tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-
 }
 
 #pragma region Asoftmax
