@@ -3469,6 +3469,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     
     
     ofstream OutFile("output",std::ofstream::app);
+    std::cout << "forward" << std::endl;
     OutFile << "f" << std::endl;
 }
 
