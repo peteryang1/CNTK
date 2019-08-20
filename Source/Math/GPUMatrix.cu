@@ -3468,7 +3468,8 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     //                                                                GetStream());
     
     
-    std::cout << "forward" << std::endl;
+    ofstream OutFile("output",std::ofstream::app);
+    OutFile << "f" << std::endl;
 }
 
 // savedMean/savedInvStdDev are the interpolated mean/inverse standard deviation as used in ForwardProp().
