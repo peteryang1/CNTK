@@ -3476,7 +3476,6 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                      const GPUMatrix<StatType>& savedMean, const GPUMatrix<StatType>& savedInvStdDev,
                                                      GPUMatrix<StatType>& scaleGrad, GPUMatrix<StatType>& biasGrad) const
 {
-    std::cout << "backward" << std::endl;
     assert((GetNumRows() % scale.GetNumRows()) == 0);
 
     bool spatial = GetNumRows() != scale.GetNumRows();
