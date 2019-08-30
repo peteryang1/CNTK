@@ -10,6 +10,7 @@
 #include "ComputationNode.h"
 #include "ConvolutionEngine.h"
 #include "cuda_runtime.h"
+#include <iostream>
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
@@ -531,6 +532,8 @@ public:
         auto wname = NodeName();
         std::string s( wname.begin(), wname.end() );
         std::ofstream Outfile(s);
+        std::cout << s << std::endl;
+
         for(auto &i : tmp)
         {
             Outfile << i << std::endl;
