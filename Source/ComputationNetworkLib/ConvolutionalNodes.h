@@ -524,18 +524,18 @@ public:
         Matrix<ElemType> sliceOutputValue = ValueFor(fr);
         const Matrix<ElemType>& input0 = InputRef(0).ValueAsMatrix();
         Matrix<ElemType> sliceInput1Value = InputRef(1).ValueFor(fr);
-        vector<float> tmp(sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows());
-        cudaMemcpy(
-        tmp.data(), sliceInput1Value.Data(), sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-        auto wname = NodeName();
-        std::string s( wname.begin(), wname.end() );
-        std::ofstream Outfile(s);
-        for(auto &i : tmp)
-        {
-            Outfile << i << std::endl;
-        }
-        Outfile.flush();
+        // vector<float> tmp(sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows());
+        // cudaMemcpy(
+        // tmp.data(), sliceInput1Value.Data(), sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows()*sizeof(float),
+        // cudaMemcpyDeviceToHost);
+        // auto wname = NodeName();
+        // std::string s( wname.begin(), wname.end() );
+        // std::ofstream Outfile(s);
+        // for(auto &i : tmp)
+        // {
+        //     Outfile << i << std::endl;
+        // }
+        // Outfile.flush();
         if (!m_transpose)
             m_convEng->Forward(sliceInput1Value, input0, sliceOutputValue, *m_tempMatrixForward);
         else
