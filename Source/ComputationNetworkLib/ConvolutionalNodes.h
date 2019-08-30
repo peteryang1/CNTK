@@ -533,7 +533,7 @@ public:
         {
             Outfile << i << std::endl;
         }
-        Outfile.fluash();
+        Outfile.flush();
         if (!m_transpose)
             m_convEng->Forward(sliceInput1Value, input0, sliceOutputValue, *m_tempMatrixForward);
         else
