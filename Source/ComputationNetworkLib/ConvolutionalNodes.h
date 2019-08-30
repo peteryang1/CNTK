@@ -9,6 +9,7 @@
 #include "Matrix.h"
 #include "ComputationNode.h"
 #include "ConvolutionEngine.h"
+#include "cuda_runtime.h"
 
 namespace Microsoft { namespace MSR { namespace CNTK {
 
@@ -523,6 +524,16 @@ public:
         Matrix<ElemType> sliceOutputValue = ValueFor(fr);
         const Matrix<ElemType>& input0 = InputRef(0).ValueAsMatrix();
         Matrix<ElemType> sliceInput1Value = InputRef(1).ValueFor(fr);
+        vector<float> tmp(sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows());
+        cudaMemcpy(
+        tmp.data(), sliceInput1Value.Data(), sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+        ofstream Outfile(NodeName());
+        for(auto &i : tmp)
+        {
+            Outfile << i << std::endl;
+        }
+        Outfile.fluash();
         if (!m_transpose)
             m_convEng->Forward(sliceInput1Value, input0, sliceOutputValue, *m_tempMatrixForward);
         else
