@@ -528,7 +528,9 @@ public:
         cudaMemcpy(
         tmp.data(), sliceInput1Value.Data(), sliceInput1Value.GetNumCols() * sliceInput1Value.GetNumRows()*sizeof(float),
         cudaMemcpyDeviceToHost);
-        std::ofstream Outfile(NodeName());
+        auto wname = NodeName();
+        std::string s( wname.begin(), wname.end() );
+        std::ofstream Outfile(s);
         for(auto &i : tmp)
         {
             Outfile << i << std::endl;
