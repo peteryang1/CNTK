@@ -3459,19 +3459,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
                                                      savedMean.Data(), savedInvStdDev.Data(),
                                                      GetStream());
 
-    vector<float> tmp(out.GetNumCols()*out.GetNumRows());
-    GPUMatrix<float> tmp1(out.GetNumRows(),out.GetNumCols(),out.GetComputeDeviceId());
-    tmp1.CastAssignValuesOf(&out);
-    ofstream OutFile("output",std::ofstream::app);
-    cudaMemcpy(
-        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
-        cudaMemcpyDeviceToHost);
-    for(auto i=0;i<tmp.size();i+=10)
-    {
-        OutFile << tmp[i] << std::endl;
-    }
-    OutFile << std::endl;
-    OutFile.flush();
+    
 
     // NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                normalizeRunningStats, epsilon,

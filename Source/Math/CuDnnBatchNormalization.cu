@@ -75,6 +75,17 @@ protected:
                                                               m_inOutCuDnnT, ptr(out), m_scaleBiasCuDnnT, ptr(scale), ptr(bias), expAvgFactor, ptr(runMean), ptr(runVariance),
                                                               m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
         }
+        vector<float> tmp(out.GetNumCols()*out.GetNumRows());
+        ofstream OutFile("output",std::ofstream::app);
+        cudaMemcpy(
+            tmp.data(), out.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
     }
 
     void BackwardCore(const InoutMat& in, const InoutMat& srcGrad, InoutMat& grad, const StatMat& scale, double blendFactor, const StatMat& savedMean, const StatMat& savedInvStdDev,
