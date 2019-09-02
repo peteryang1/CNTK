@@ -83,6 +83,7 @@ protected:
         }
         OutFile << std::endl;
         OutFile.flush();
+        std::cout << "forward" << std::endl;
     }
 
     void BackwardCore(const InoutMat& in, const InoutMat& srcGrad, InoutMat& grad, const StatMat& scale, double blendFactor, const StatMat& savedMean, const StatMat& savedInvStdDev,

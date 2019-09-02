@@ -3472,6 +3472,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     }
     OutFile << std::endl;
     OutFile.flush();
+    std::cout << "forward" << std::endl;
 
     // NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                normalizeRunningStats, epsilon,
