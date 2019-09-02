@@ -3533,9 +3533,9 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
     // BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                         in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
     
-    vector<float> tmp(grad.GetNumCols()*grad.GetNumRows());
-    GPUMatrix<float> tmp1(grad.GetNumRows(),grad.GetNumCols(),grad.GetComputeDeviceId());
-    tmp1.CastAssignValuesOf(&grad);
+    vector<float> tmp(GetNumCols()*GetNumRows());
+    GPUMatrix<float> tmp1(GetNumRows(),GetNumCols(),GetComputeDeviceId());
+    tmp1.CastAssignValuesOf(this);
     ofstream OutFile("grad_half",std::ofstream::app);
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
