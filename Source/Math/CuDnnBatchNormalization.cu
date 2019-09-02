@@ -75,17 +75,6 @@ protected:
                                                               m_inOutCuDnnT, ptr(out), m_scaleBiasCuDnnT, ptr(scale), ptr(bias), expAvgFactor, ptr(runMean), ptr(runVariance),
                                                               m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
         }
-        vector<float> tmp(out.GetNumCols()*out.GetNumRows());
-        ofstream OutFile("output",std::ofstream::app);
-        cudaMemcpy(
-            tmp.data(), out.Data(), tmp.size()*sizeof(float),
-            cudaMemcpyDeviceToHost);
-        for(auto i=0;i<tmp.size();i+=10)
-        {
-            OutFile << tmp[i] << std::endl;
-        }
-        OutFile << std::endl;
-        OutFile.flush();
     }
 
     void BackwardCore(const InoutMat& in, const InoutMat& srcGrad, InoutMat& grad, const StatMat& scale, double blendFactor, const StatMat& savedMean, const StatMat& savedInvStdDev,
@@ -97,6 +86,18 @@ protected:
         // REVIEW alexeyk: change betaParamDiff to 1 and update CNTK BN engine.
         CUDNN_CALL(cudnnBatchNormalizationBackward(*m_cudnn, mode, &C::One, accumulateDataGrad ? &C::One : &C::Zero, &C::One, &C::Zero, m_inOutCuDnnT, ptr(in), m_inOutCuDnnT, ptr(srcGrad), m_inOutCuDnnT, ptr(grad),
                                                    m_scaleBiasCuDnnT, ptr(scale), ptr(scaleGrad), ptr(biasGrad), m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
+    
+        vector<float> tmp(grad.GetNumCols()*grad.GetNumRows());
+        ofstream OutFile("output",std::ofstream::app);
+        cudaMemcpy(
+            tmp.data(), grad.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
     }
 
 private:

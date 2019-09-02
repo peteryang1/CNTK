@@ -3459,8 +3459,6 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
                                                      savedMean.Data(), savedInvStdDev.Data(),
                                                      GetStream());
 
-    
-
     // NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                normalizeRunningStats, epsilon,
     //                                                                Data(), out.Data(),
@@ -3519,6 +3517,19 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
     // BackpropagateBatchNormGradients_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                         in.Data(), Data(), grad.Data(), scale.Data(), mbStatsWeight, meanGrad.Data(), varGrad.Data(), savedMean.Data(), savedInvStdDev.Data(), GetStream());
     
+    vector<float> tmp(grad.GetNumCols()*grad.GetNumRows());
+    GPUMatrix<float> tmp1(grad.GetNumRows(),grad.GetNumCols(),grad.GetComputeDeviceId());
+    tmp1.CastAssignValuesOf(&grad);
+    ofstream OutFile("output",std::ofstream::app);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
 }
 
 #pragma region Asoftmax
