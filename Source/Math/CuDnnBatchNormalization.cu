@@ -76,10 +76,7 @@ protected:
                                                               m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
         }
         vector<float> tmp(out.GetNumCols()*out.GetNumRows());
-        ofstream OutFile("output_float",std::ofstream::app);
-        cudaMemcpy(
-            tmp.data(), out.Data(), tmp.size()*sizeof(float),
-            cudaMemcpyDeviceToHost);
+        ofstream OutFile("useless_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
             OutFile << tmp[i] << std::endl;
@@ -98,6 +95,17 @@ protected:
         // REVIEW alexeyk: change betaParamDiff to 1 and update CNTK BN engine.
         CUDNN_CALL(cudnnBatchNormalizationBackward(*m_cudnn, mode, &C::One, accumulateDataGrad ? &C::One : &C::Zero, &C::One, &C::Zero, m_inOutCuDnnT, ptr(in), m_inOutCuDnnT, ptr(srcGrad), m_inOutCuDnnT, ptr(grad),
                                                    m_scaleBiasCuDnnT, ptr(scale), ptr(scaleGrad), ptr(biasGrad), m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
+        vector<float> tmp(srcGrad.GetNumCols()*srcGrad.GetNumRows());
+        ofstream OutFile("grad_float",std::ofstream::app);
+        cudaMemcpy(
+            tmp.data(), srcGrad.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
     }
 
 private:
