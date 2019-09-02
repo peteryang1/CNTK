@@ -3462,7 +3462,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     vector<float> tmp(out.GetNumCols()*out.GetNumRows());
     GPUMatrix<float> tmp1(out.GetNumRows(),out.GetNumCols(),out.GetComputeDeviceId());
     tmp1.CastAssignValuesOf(&out);
-    ofstream OutFile("output",std::ofstream::app);
+    ofstream OutFile("output_half",std::ofstream::app);
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);

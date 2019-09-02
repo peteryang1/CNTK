@@ -76,7 +76,7 @@ protected:
                                                               m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
         }
         vector<float> tmp(out.GetNumCols()*out.GetNumRows());
-        ofstream OutFile("output",std::ofstream::app);
+        ofstream OutFile("output_float",std::ofstream::app);
         cudaMemcpy(
             tmp.data(), out.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
