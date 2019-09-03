@@ -84,7 +84,7 @@ protected:
         OutFile << std::endl;
         OutFile.flush();
 
-        tmp.resieze(scale.GetNumRows()*scale.GetNumCols());
+        tmp.resize(scale.GetNumRows()*scale.GetNumCols());
         cudaMemcpy(
             tmp.data(), scale.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
@@ -96,7 +96,7 @@ protected:
         OutFile1 << std::endl;
         OutFile1.flush();
 
-        tmp.resieze(bias.GetNumRows()*bias.GetNumCols());
+        tmp.resize(bias.GetNumRows()*bias.GetNumCols());
         cudaMemcpy(
             tmp.data(), bias.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
@@ -108,7 +108,7 @@ protected:
         OutFile2 << std::endl;
         OutFile2.flush();
 
-        tmp.resieze(runMean.GetNumRows()*runMean.GetNumCols());
+        tmp.resize(runMean.GetNumRows()*runMean.GetNumCols());
         cudaMemcpy(
             tmp.data(), runMean.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
@@ -120,7 +120,7 @@ protected:
         OutFile3 << std::endl;
         OutFile3.flush();
 
-        tmp.resieze(runVariance.GetNumRows()*runVariance.GetNumCols());
+        tmp.resize(runVariance.GetNumRows()*runVariance.GetNumCols());
         cudaMemcpy(
             tmp.data(), runVariance.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
@@ -132,7 +132,7 @@ protected:
         OutFile4 << std::endl;
         OutFile4.flush();
 
-        tmp.resieze(savedMean.GetNumRows()*savedMean.GetNumCols());
+        tmp.resize(savedMean.GetNumRows()*savedMean.GetNumCols());
         cudaMemcpy(
             tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
@@ -144,7 +144,7 @@ protected:
         OutFile5 << std::endl;
         OutFile5.flush();
 
-        tmp.resieze(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
+        tmp.resize(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
         cudaMemcpy(
             tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);

@@ -3474,7 +3474,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile << std::endl;
     OutFile.flush();
 
-    tmp.resieze(scale.GetNumRows()*scale.GetNumCols());
+    tmp.resize(scale.GetNumRows()*scale.GetNumCols());
     tmp1.Resize(scale.GetNumRows(),scale.GetNumCols());
     tmp1.CastAssignValuesOf(&scale);
     cudaMemcpy(
@@ -3488,7 +3488,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile1 << std::endl;
     OutFile1.flush();
 
-    tmp.resieze(bias.GetNumRows()*bias.GetNumCols());
+    tmp.resize(bias.GetNumRows()*bias.GetNumCols());
     tmp1.Resize(bias.GetNumRows(),bias.GetNumCols());
     tmp1.CastAssignValuesOf(&bias);
     cudaMemcpy(
@@ -3502,7 +3502,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile2 << std::endl;
     OutFile2.flush();
 
-    tmp.resieze(runMean.GetNumRows()*runMean.GetNumCols());
+    tmp.resize(runMean.GetNumRows()*runMean.GetNumCols());
     tmp1.Resize(runMean.GetNumRows(),runMean.GetNumCols());
     tmp1.CastAssignValuesOf(&runMean);
     cudaMemcpy(
@@ -3516,7 +3516,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile3 << std::endl;
     OutFile3.flush();
 
-    tmp.resieze(runVariance.GetNumRows()*runVariance.GetNumCols());
+    tmp.resize(runVariance.GetNumRows()*runVariance.GetNumCols());
     tmp1.Resize(runVariance.GetNumRows(),runVariance.GetNumCols());
     tmp1.CastAssignValuesOf(&runVariance);
     cudaMemcpy(
@@ -3530,7 +3530,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile4 << std::endl;
     OutFile4.flush();
 
-    tmp.resieze(savedMean.GetNumRows()*savedMean.GetNumCols());
+    tmp.resize(savedMean.GetNumRows()*savedMean.GetNumCols());
     tmp1.Resize(savedMean.GetNumRows(),savedMean.GetNumCols());
     tmp1.CastAssignValuesOf(&savedMean);
     cudaMemcpy(
@@ -3544,7 +3544,7 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     OutFile5 << std::endl;
     OutFile5.flush();
 
-    tmp.resieze(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
+    tmp.resize(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
     tmp1.Resize(savedInvStdDev.GetNumRows(),savedInvStdDev.GetNumCols());
     tmp1.CastAssignValuesOf(&savedInvStdDev);
     cudaMemcpy(
