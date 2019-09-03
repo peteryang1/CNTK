@@ -3459,20 +3459,104 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
                                                      savedMean.Data(), savedInvStdDev.Data(),
                                                      GetStream());
 
-    vector<float> tmp(out.GetNumCols()*out.GetNumRows());
+    
+    vector<float> tmp(scale.GetNumCols()*scale.GetNumRows());
     GPUMatrix<float> tmp1(out.GetNumRows(),out.GetNumCols(),out.GetComputeDeviceId());
     tmp1.CastAssignValuesOf(&out);
-    ofstream OutFile("useless_half",std::ofstream::app);
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
+    ofstream OutFile("out_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
         OutFile << tmp[i] << std::endl;
     }
     OutFile << std::endl;
     OutFile.flush();
-    std::cout << "forward" << std::endl;
+
+    tmp.resieze(scale.GetNumRows()*scale.GetNumCols());
+    tmp1.Resize(scale.GetNumRows(),scale.GetNumCols());
+    tmp1.CastAssignValuesOf(&scale);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    ofstream OutFile("scale_half",std::ofstream::app);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
+
+    tmp.resieze(bias.GetNumRows()*bias.GetNumCols());
+    tmp1.Resize(bias.GetNumRows(),bias.GetNumCols());
+    tmp1.CastAssignValuesOf(&bias);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    ofstream OutFile("bias_half",std::ofstream::app);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
+
+    tmp.resieze(runMean.GetNumRows()*runMean.GetNumCols());
+    tmp1.Resize(runMean.GetNumRows(),runMean.GetNumCols());
+    tmp1.CastAssignValuesOf(&runMean);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    ofstream OutFile("runMean_half",std::ofstream::app);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
+
+    tmp.resieze(runVariance.GetNumRows()*runVariance.GetNumCols());
+    tmp1.Resize(runVariance.GetNumRows(),runVariance.GetNumCols());
+    tmp1.CastAssignValuesOf(&runVariance);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    ofstream OutFile("runVariance_half",std::ofstream::app);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
+
+    tmp.resieze(savedMean.GetNumRows()*savedMean.GetNumCols());
+    tmp1.Resize(savedMean.GetNumRows(),savedMean.GetNumCols());
+    tmp1.CastAssignValuesOf(&savedMean);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    ofstream OutFile("savedMean_half",std::ofstream::app);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
+
+    tmp.resieze(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
+    tmp1.Resize(savedInvStdDev.GetNumRows(),savedInvStdDev.GetNumCols());
+    tmp1.CastAssignValuesOf(&savedInvStdDev);
+    cudaMemcpy(
+        tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
+        cudaMemcpyDeviceToHost);
+    ofstream OutFile("savedInvStdDev_half",std::ofstream::app);
+    for(auto i=0;i<tmp.size();i+=10)
+    {
+        OutFile << tmp[i] << std::endl;
+    }
+    OutFile << std::endl;
+    OutFile.flush();
 
     // NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                normalizeRunningStats, epsilon,
@@ -3492,7 +3576,7 @@ void GPUMatrix<ElemType>::BatchNormalizationBackward(const GPUMatrix<ElemType>& 
                                                      GPUMatrix<StatType>& scaleGrad, GPUMatrix<StatType>& biasGrad) const
 {
     assert((GetNumRows() % scale.GetNumRows()) == 0);
-
+    LogicError("backward");
     std::cout << "backward" << std::endl;
     bool spatial = GetNumRows() != scale.GetNumRows();
     size_t vectorSize = GetNumRows();

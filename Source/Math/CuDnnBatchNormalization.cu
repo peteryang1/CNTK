@@ -76,20 +76,92 @@ protected:
                                                               m_cudnnEpsilon, ptr(savedMean), ptr(savedInvStdDev)));
         }
         vector<float> tmp(out.GetNumCols()*out.GetNumRows());
-        ofstream OutFile("useless_float",std::ofstream::app);
+        ofstream OutFile("out_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
             OutFile << tmp[i] << std::endl;
         }
         OutFile << std::endl;
         OutFile.flush();
-        std::cout << "forward" << std::endl;
+
+        tmp.resieze(scale.GetNumRows()*scale.GetNumCols());
+        cudaMemcpy(
+            tmp.data(), scale.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        ofstream OutFile("scale_float",std::ofstream::app);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
+
+        tmp.resieze(bias.GetNumRows()*bias.GetNumCols());
+        cudaMemcpy(
+            tmp.data(), bias.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        ofstream OutFile("bias_float",std::ofstream::app);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
+
+        tmp.resieze(runMean.GetNumRows()*runMean.GetNumCols());
+        cudaMemcpy(
+            tmp.data(), runMean.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        ofstream OutFile("runMean_float",std::ofstream::app);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
+
+        tmp.resieze(runVariance.GetNumRows()*runVariance.GetNumCols());
+        cudaMemcpy(
+            tmp.data(), runVariance.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        ofstream OutFile("runVariance_float",std::ofstream::app);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
+
+        tmp.resieze(savedMean.GetNumRows()*savedMean.GetNumCols());
+        cudaMemcpy(
+            tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        ofstream OutFile("savedMean_float",std::ofstream::app);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
+
+        tmp.resieze(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
+        cudaMemcpy(
+            tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
+            cudaMemcpyDeviceToHost);
+        ofstream OutFile("savedInvStdDev_float",std::ofstream::app);
+        for(auto i=0;i<tmp.size();i+=10)
+        {
+            OutFile << tmp[i] << std::endl;
+        }
+        OutFile << std::endl;
+        OutFile.flush();
     }
 
     void BackwardCore(const InoutMat& in, const InoutMat& srcGrad, InoutMat& grad, const StatMat& scale, double blendFactor, const StatMat& savedMean, const StatMat& savedInvStdDev,
                       StatMat& scaleGrad, StatMat& biasGrad, bool accumulateDataGrad) override
     {
         std::cout << "backward" << std::endl;
+        LogicError("backward");
         UNUSED(blendFactor);  // BUGBUG: It should be used.
         m_inOutCuDnnT.UpdateBatchSize(srcGrad.GetNumCols());
         cudnnBatchNormMode_t mode = m_spatial ? CUDNN_BATCHNORM_SPATIAL_PERSISTENT : CUDNN_BATCHNORM_PER_ACTIVATION;
@@ -171,7 +243,7 @@ private:
 
 template class CuDnnBatchNormEngine<float, float>;
 template class CuDnnBatchNormEngine<double, double>;
-template class CuDnnBatchNormEngine<half, float>;
+template class CuDnnBatchNormEngine<float, float>;
 
 template <typename InoutType, typename StatType>
 std::unique_ptr<BatchNormEngine<InoutType, StatType>> CuDnnBatchNormEngineFactory<InoutType, StatType>::Create(DEVICEID_TYPE deviceId, const TensorShape& inOutT,
@@ -182,7 +254,7 @@ std::unique_ptr<BatchNormEngine<InoutType, StatType>> CuDnnBatchNormEngineFactor
 
 template class CuDnnBatchNormEngineFactory<float, float>;
 template class CuDnnBatchNormEngineFactory<double, double>;
-template class CuDnnBatchNormEngineFactory<half, float>;
+template class CuDnnBatchNormEngineFactory<float, float>;
 
 CudaTimer::~CudaTimer()
 {
