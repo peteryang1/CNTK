@@ -88,73 +88,73 @@ protected:
         cudaMemcpy(
             tmp.data(), scale.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
-        ofstream OutFile("scale_float",std::ofstream::app);
+        ofstream OutFile1("scale_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
-            OutFile << tmp[i] << std::endl;
+            OutFile1 << tmp[i] << std::endl;
         }
-        OutFile << std::endl;
-        OutFile.flush();
+        OutFile1 << std::endl;
+        OutFile1.flush();
 
         tmp.resieze(bias.GetNumRows()*bias.GetNumCols());
         cudaMemcpy(
             tmp.data(), bias.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
-        ofstream OutFile("bias_float",std::ofstream::app);
+        ofstream OutFile2("bias_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
-            OutFile << tmp[i] << std::endl;
+            OutFile2 << tmp[i] << std::endl;
         }
-        OutFile << std::endl;
-        OutFile.flush();
+        OutFile2 << std::endl;
+        OutFile2.flush();
 
         tmp.resieze(runMean.GetNumRows()*runMean.GetNumCols());
         cudaMemcpy(
             tmp.data(), runMean.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
-        ofstream OutFile("runMean_float",std::ofstream::app);
+        ofstream OutFile3("runMean_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
-            OutFile << tmp[i] << std::endl;
+            OutFile3 << tmp[i] << std::endl;
         }
-        OutFile << std::endl;
-        OutFile.flush();
+        OutFile3 << std::endl;
+        OutFile3.flush();
 
         tmp.resieze(runVariance.GetNumRows()*runVariance.GetNumCols());
         cudaMemcpy(
             tmp.data(), runVariance.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
-        ofstream OutFile("runVariance_float",std::ofstream::app);
+        ofstream OutFile4("runVariance_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
-            OutFile << tmp[i] << std::endl;
+            OutFile4 << tmp[i] << std::endl;
         }
-        OutFile << std::endl;
-        OutFile.flush();
+        OutFile4 << std::endl;
+        OutFile4.flush();
 
         tmp.resieze(savedMean.GetNumRows()*savedMean.GetNumCols());
         cudaMemcpy(
             tmp.data(), savedMean.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
-        ofstream OutFile("savedMean_float",std::ofstream::app);
+        ofstream OutFile5("savedMean_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
-            OutFile << tmp[i] << std::endl;
+            OutFile5 << tmp[i] << std::endl;
         }
-        OutFile << std::endl;
-        OutFile.flush();
+        OutFile5 << std::endl;
+        OutFile5.flush();
 
         tmp.resieze(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
         cudaMemcpy(
             tmp.data(), savedInvStdDev.Data(), tmp.size()*sizeof(float),
             cudaMemcpyDeviceToHost);
-        ofstream OutFile("savedInvStdDev_float",std::ofstream::app);
+        ofstream OutFile6("savedInvStdDev_float",std::ofstream::app);
         for(auto i=0;i<tmp.size();i+=10)
         {
-            OutFile << tmp[i] << std::endl;
+            OutFile6 << tmp[i] << std::endl;
         }
-        OutFile << std::endl;
-        OutFile.flush();
+        OutFile6 << std::endl;
+        OutFile6.flush();
     }
 
     void BackwardCore(const InoutMat& in, const InoutMat& srcGrad, InoutMat& grad, const StatMat& scale, double blendFactor, const StatMat& savedMean, const StatMat& savedInvStdDev,

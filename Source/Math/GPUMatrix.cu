@@ -3480,13 +3480,13 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
-    ofstream OutFile("scale_half",std::ofstream::app);
+    ofstream OutFile1("scale_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
-        OutFile << tmp[i] << std::endl;
+        OutFile1 << tmp[i] << std::endl;
     }
-    OutFile << std::endl;
-    OutFile.flush();
+    OutFile1 << std::endl;
+    OutFile1.flush();
 
     tmp.resieze(bias.GetNumRows()*bias.GetNumCols());
     tmp1.Resize(bias.GetNumRows(),bias.GetNumCols());
@@ -3494,13 +3494,13 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
-    ofstream OutFile("bias_half",std::ofstream::app);
+    ofstream OutFile2("bias_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
-        OutFile << tmp[i] << std::endl;
+        OutFile2 << tmp[i] << std::endl;
     }
-    OutFile << std::endl;
-    OutFile.flush();
+    OutFile2 << std::endl;
+    OutFile2.flush();
 
     tmp.resieze(runMean.GetNumRows()*runMean.GetNumCols());
     tmp1.Resize(runMean.GetNumRows(),runMean.GetNumCols());
@@ -3508,13 +3508,13 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
-    ofstream OutFile("runMean_half",std::ofstream::app);
+    ofstream OutFile3("runMean_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
-        OutFile << tmp[i] << std::endl;
+        OutFile3 << tmp[i] << std::endl;
     }
-    OutFile << std::endl;
-    OutFile.flush();
+    OutFile3 << std::endl;
+    OutFile3.flush();
 
     tmp.resieze(runVariance.GetNumRows()*runVariance.GetNumCols());
     tmp1.Resize(runVariance.GetNumRows(),runVariance.GetNumCols());
@@ -3522,13 +3522,13 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
-    ofstream OutFile("runVariance_half",std::ofstream::app);
+    ofstream OutFile4("runVariance_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
-        OutFile << tmp[i] << std::endl;
+        OutFile4 << tmp[i] << std::endl;
     }
-    OutFile << std::endl;
-    OutFile.flush();
+    OutFile4 << std::endl;
+    OutFile4.flush();
 
     tmp.resieze(savedMean.GetNumRows()*savedMean.GetNumCols());
     tmp1.Resize(savedMean.GetNumRows(),savedMean.GetNumCols());
@@ -3536,13 +3536,13 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
-    ofstream OutFile("savedMean_half",std::ofstream::app);
+    ofstream OutFile5("savedMean_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
-        OutFile << tmp[i] << std::endl;
+        OutFile5 << tmp[i] << std::endl;
     }
-    OutFile << std::endl;
-    OutFile.flush();
+    OutFile5 << std::endl;
+    OutFile5.flush();
 
     tmp.resieze(savedInvStdDev.GetNumRows()*savedInvStdDev.GetNumCols());
     tmp1.Resize(savedInvStdDev.GetNumRows(),savedInvStdDev.GetNumCols());
@@ -3550,13 +3550,13 @@ void GPUMatrix<ElemType>::BatchNormalizationForward(const GPUMatrix<StatType>& s
     cudaMemcpy(
         tmp.data(), tmp1.Data(), tmp.size()*sizeof(float),
         cudaMemcpyDeviceToHost);
-    ofstream OutFile("savedInvStdDev_half",std::ofstream::app);
+    ofstream OutFile6("savedInvStdDev_half",std::ofstream::app);
     for(auto i=0;i<tmp.size();i+=10)
     {
-        OutFile << tmp[i] << std::endl;
+        OutFile6 << tmp[i] << std::endl;
     }
-    OutFile << std::endl;
-    OutFile.flush();
+    OutFile6 << std::endl;
+    OutFile6.flush();
 
     // NormalizeBatchTraining_apex::template Call<ElemType, StatType>(vectorSize, spatialSize, batchSize, spatial,
     //                                                                normalizeRunningStats, epsilon,
